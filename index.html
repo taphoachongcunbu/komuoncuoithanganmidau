@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Chi Tiêu</title>
+    <title>Không Muốn Cuối Tháng Hết Tiền 💸</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,7 +17,7 @@
     </header>
 
     <div id="login-message">
-        <p>Vui lòng đăng nhập để quản lý chi tiêu của bạn!</p>
+        <p>Vui lòng đăng nhập bằng Google để quản lý chi tiêu của bạn!</p>
     </div>
 
     <main id="app-content" style="display: none;">
@@ -44,8 +44,8 @@
         <section id="income" class="tab-content">
             <h2>Nhập Tiền Thu</h2>
             <form id="income-form">
-                <input type="number" id="income-amount" placeholder="Số tiền" required>
-                <input type="text" id="income-source" placeholder="Nguồn (Lương, Thưởng...)" required>
+                <input type="number" id="income-amount" placeholder="Số tiền (VD: 5000000)" required>
+                <input type="text" id="income-source" placeholder="Nguồn (Lương, Thưởng, Bán đồ...)" required>
                 <button type="submit" class="btn-primary">Lưu khoản thu</button>
             </form>
         </section>
@@ -54,23 +54,23 @@
         <section id="expense" class="tab-content">
             <h2>Nhập Tiền Chi</h2>
             <form id="expense-form">
-                <input type="number" id="expense-amount" placeholder="Số tiền" required>
-                <input type="text" id="expense-category" placeholder="Danh mục (Ăn uống, Mua sắm...)" required>
+                <input type="number" id="expense-amount" placeholder="Số tiền (VD: 45000)" required>
+                <input type="text" id="expense-category" placeholder="Danh mục (Ăn uống, Mua sắm, Tiền nhà...)" required>
                 <button type="submit" class="btn-primary">Lưu khoản chi</button>
             </form>
         </section>
 
         <!-- Nội dung Tab Nợ -->
         <section id="debt" class="tab-content">
-            <h2>Ghi chép Nợ</h2>
+            <h2>Ghi Chép Nợ</h2>
             <form id="debt-form">
                 <select id="debt-type">
-                    <option value="vay">Mình vay người ta</option>
-                    <option value="cho_vay">Người ta vay mình</option>
+                    <option value="vay">Mình vay người ta (Cần trả)</option>
+                    <option value="cho_vay">Người ta vay mình (Được đòi)</option>
                 </select>
                 <input type="number" id="debt-amount" placeholder="Số tiền" required>
-                <input type="text" id="debt-person" placeholder="Tên người nợ/chủ nợ" required>
-                <button type="submit" class="btn-primary">Lưu nợ</button>
+                <input type="text" id="debt-person" placeholder="Tên người nợ / chủ nợ" required>
+                <button type="submit" class="btn-primary">Lưu ghi chép nợ</button>
             </form>
         </section>
 
@@ -79,21 +79,18 @@
             <h2>Wishlist (Cần Mua)</h2>
             <form id="wishlist-form">
                 <input type="text" id="wish-name" placeholder="Tên món đồ" required>
-                <input type="url" id="wish-link" placeholder="Link Shopee/TikTok">
+                <input type="url" id="wish-link" placeholder="Link Shopee/TikTok (nếu có)">
                 <select id="wish-priority">
-                    <option value="1">🔥 Must have (Phải mua)</option>
+                    <option value="1">🔥 Must have (Phải mua ngay)</option>
                     <option value="2">✨ Có cũng được</option>
                     <option value="3">🤷‍♀️ Chưa cần lắm</option>
                 </select>
                 <button type="submit" class="btn-primary">Thêm vào Wishlist</button>
             </form>
-            <ul id="wishlist-items">
-                <!-- Các món đồ sẽ hiện ở đây -->
-            </ul>
+            <ul id="wishlist-items"></ul>
         </section>
     </main>
 
-    <!-- Lưu ý quan trọng: Phải dùng type="module" cho Firebase v9 -->
     <script type="module" src="app.js"></script>
 </body>
 </html>
