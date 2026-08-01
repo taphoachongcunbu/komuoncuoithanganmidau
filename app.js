@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-// Đã gỡ bỏ firebase-storage.js hoàn toàn
+// THÊM `updateDoc` để cập nhật trạng thái Đã mua
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, deleteDoc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyCGvyVRdZ3as6H5cq3bZkimHbp68K1nFpw",
@@ -47,17 +47,12 @@ window.requestDelete = (type, id) => {
 
 // === FORMAT SỐ TIỀN CÓ DẤU CHẤM ===
 function formatCurrencyInput(e) {
-    let val = e.target.value.replace(/\D/g, ""); // Xóa mọi ký tự không phải số
+    let val = e.target.value.replace(/\D/g, ""); 
     if (val) {
-        e.target.value = Number(val).toLocaleString('vi-VN');
-        e.target.dataset.raw = val; // Lưu số thật ẩn ở phía sau
-    } else {
-        e.target.value = "";
-        e.target.dataset.raw = "0";
-    }
+        e.target.value = Number(val).toLocaleString('vi-VN'); e.target.dataset.raw = val; 
+    } else { e.target.value = ""; e.target.dataset.raw = "0"; }
 }
 document.querySelectorAll('.amount-input').forEach(input => input.addEventListener('input', formatCurrencyInput));
-
 const formatVND = (amount) => Number(amount).toLocaleString('vi-VN') + ' đ';
 
 // UI Controls & Auth
@@ -85,7 +80,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// === ẨN/HIỆN MỤC "KHÁC" ===
 function handleSelectOther(selectId, inputId) {
     document.getElementById(selectId).addEventListener('change', (e) => {
         document.getElementById(inputId).style.display = e.target.value === 'Khác' ? 'block' : 'none';
@@ -95,7 +89,7 @@ function handleSelectOther(selectId, inputId) {
 handleSelectOther('income-source', 'income-other');
 handleSelectOther('expense-category', 'expense-other');
 
-// === CHATBOT SMART INPUT ===
+// === CHATBOT BẢN NÂNG CẤP (TỰ ĐỘNG PHÂN LOẠI) ===
 document.getElementById('btn-smart-submit').addEventListener('click', processSmartInput);
 async function processSmartInput() {
     const text = document.getElementById('smart-input').value.trim().toLowerCase();
@@ -109,81 +103,91 @@ async function processSmartInput() {
     if(amount === 0) { showToast("Vui lòng ghi rõ số tiền (VD: 50k, 2tr)", "error"); return; }
 
     let type = text.includes('thu') || text.includes('lương') ? 'income' : 'expense';
-    let label = text.replace(match[0], '').replace(/(thu|chi|mua)/g, '').trim() || 'Khác';
+    
+    // Tự động phân tích từ khóa -> Danh mục
+    let category = 'Khác';
+    if (/ăn|uống|cà phê|matcha|phở|cơm|bún|trà/i.test(text)) category = 'Ăn uống';
+    else if (/xăng|xe|grab|taxi|bus/i.test(text)) category = 'Di chuyển';
+    else if (/áo|quần|giày|shopee|lazada|mỹ phẩm/i.test(text)) category = 'Mua sắm';
+    else if (/điện|nước|nhà|trọ|wifi/i.test(text)) category = 'Tiền nhà/Điện nước';
 
     const dataObj = { amount: amount, createdAt: new Date() };
-    if (type === 'expense') dataObj.category = label; else dataObj.source = label;
+    if (type === 'expense') dataObj.category = category; else dataObj.source = category;
 
     await addDoc(collection(db, 'users', currentUser.uid, type), dataObj);
-    showToast(`Đã tự động ghi ${type === 'income' ? 'Thu' : 'Chi'}: ${formatVND(amount)}`);
+    showToast(`Đã ghi Chi: ${formatVND(amount)} vào nhóm "${category}"`);
     document.getElementById('smart-input').value = ''; loadAllData();
 }
 
-// LƯU THU/CHI
 async function saveTransaction(type, amountId, selectId, otherId) {
     const amount = Number(document.getElementById(amountId).dataset.raw || 0);
     if(amount === 0) return showToast("Chưa nhập số tiền!", "error");
-    
     let label = document.getElementById(selectId).value;
     if (label === 'Khác') label = document.getElementById(otherId).value || 'Khác';
-
     const dataObj = { amount: amount, createdAt: new Date() };
     if (type === 'expense') dataObj.category = label; else dataObj.source = label;
-    
     await addDoc(collection(db, 'users', currentUser.uid, type), dataObj);
-    showToast(`Đã lưu khoản ${type === 'expense' ? 'chi' : 'thu'}!`);
-    loadAllData();
+    showToast(`Đã lưu khoản ${type === 'expense' ? 'chi' : 'thu'}!`); loadAllData();
 }
 document.getElementById('income-form').addEventListener('submit', (e) => { e.preventDefault(); saveTransaction('income', 'income-amount', 'income-source', 'income-other'); e.target.reset(); document.getElementById('income-other').style.display='none'; document.getElementById('income-amount').dataset.raw = "0"; });
 document.getElementById('expense-form').addEventListener('submit', (e) => { e.preventDefault(); saveTransaction('expense', 'expense-amount', 'expense-category', 'expense-other'); e.target.reset(); document.getElementById('expense-other').style.display='none'; document.getElementById('expense-amount').dataset.raw = "0";});
 
-// === LOGIC NỢ: THANH TOÁN ===
 window.payDebt = async (debtId, type, amount, person) => {
     await deleteDoc(doc(db, 'users', currentUser.uid, 'debt', debtId));
-    if (type === 'vay') {
-        await addDoc(collection(db, 'users', currentUser.uid, 'expense'), { amount: amount, category: `Trả tiền mượn (${person})`, createdAt: new Date() });
-        showToast("Đã thanh toán! Tự động ghi vào khoản Chi.");
-    } else {
-        await addDoc(collection(db, 'users', currentUser.uid, 'income'), { amount: amount, source: `Thu tiền cho mượn (${person})`, createdAt: new Date() });
-        showToast("Đã đòi được tiền! Tự động ghi vào khoản Thu.");
-    }
+    if (type === 'vay') { await addDoc(collection(db, 'users', currentUser.uid, 'expense'), { amount: amount, category: `Trả nợ (${person})`, createdAt: new Date() }); showToast("Đã thanh toán! Tự động ghi vào khoản Chi."); } 
+    else { await addDoc(collection(db, 'users', currentUser.uid, 'income'), { amount: amount, source: `Thu nợ (${person})`, createdAt: new Date() }); showToast("Đã đòi được tiền! Tự động ghi vào khoản Thu."); }
     loadAllData();
 };
 
 document.getElementById('debt-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const amount = Number(document.getElementById('debt-amount').dataset.raw || 0);
-    await addDoc(collection(db, 'users', currentUser.uid, 'debt'), {
-        type: document.getElementById('debt-type').value, amount: amount, person: document.getElementById('debt-person').value, createdAt: new Date()
-    });
+    e.preventDefault(); const amount = Number(document.getElementById('debt-amount').dataset.raw || 0);
+    await addDoc(collection(db, 'users', currentUser.uid, 'debt'), { type: document.getElementById('debt-type').value, amount: amount, person: document.getElementById('debt-person').value, createdAt: new Date() });
     showToast('Đã ghi vào sổ!'); e.target.reset(); document.getElementById('debt-amount').dataset.raw = "0"; loadAllData();
 });
 
-// === XỬ LÝ WISHLIST KHI KHÔNG DÙNG STORAGE ===
-document.getElementById('wishlist-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-add-wish');
-    btn.disabled = true;
+// === LOGIC WISHLIST MỚI ===
 
-    const price = Number(document.getElementById('wish-price').dataset.raw || 0);
-    const imageUrl = document.getElementById('wish-image').value; // Chỉ lấy link text bình thường
-
-    await addDoc(collection(db, 'users', currentUser.uid, 'wishlist'), {
-        name: document.getElementById('wish-name').value, price: price, image: imageUrl, link: document.getElementById('wish-link').value, priority: Number(document.getElementById('wish-priority').value), createdAt: new Date()
-    });
-    
-    showToast('Đã thêm Wishlist!'); e.target.reset(); 
-    document.getElementById('wish-price').dataset.raw = "0";
-    btn.disabled = false;
-    loadAllData();
+// Chuyển Tab Wishlist
+document.getElementById('tab-w-active').addEventListener('click', (e) => {
+    e.target.classList.add('active'); document.getElementById('tab-w-bought').classList.remove('active');
+    document.getElementById('view-w-active').style.display = 'block'; document.getElementById('view-w-bought').style.display = 'none';
+});
+document.getElementById('tab-w-bought').addEventListener('click', (e) => {
+    e.target.classList.add('active'); document.getElementById('tab-w-active').classList.remove('active');
+    document.getElementById('view-w-active').style.display = 'none'; document.getElementById('view-w-bought').style.display = 'block';
 });
 
-// === WISHLIST CHECKBOX TOTAL ===
+// Thêm món
+document.getElementById('wishlist-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const price = Number(document.getElementById('wish-price').dataset.raw || 0);
+    // Thêm trường isBought: false mặc định
+    await addDoc(collection(db, 'users', currentUser.uid, 'wishlist'), {
+        name: document.getElementById('wish-name').value, price: price, link: document.getElementById('wish-link').value, priority: Number(document.getElementById('wish-priority').value), isBought: false, createdAt: new Date()
+    });
+    showToast('Đã thêm Wishlist!'); e.target.reset(); document.getElementById('wish-price').dataset.raw = "0"; loadAllData();
+});
+
+// Tính tổng và hiện nút "Mua xong"
 window.calcWishlistTotal = () => {
     let total = 0;
-    document.querySelectorAll('.wish-check:checked').forEach(cb => { total += Number(cb.dataset.price); });
+    const checkedBoxes = document.querySelectorAll('.wish-check:checked');
+    checkedBoxes.forEach(cb => { total += Number(cb.dataset.price); });
     document.getElementById('wishlist-selected-total').innerText = formatVND(total);
+    // Hiện nút "Đã chốt đơn" nếu có ít nhất 1 cái tick
+    document.getElementById('btn-mark-bought').style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
 };
+
+// Nút "Đã chốt đơn" -> Chuyển sang trạng thái đã mua
+document.getElementById('btn-mark-bought').addEventListener('click', async () => {
+    const checkedBoxes = document.querySelectorAll('.wish-check:checked');
+    for(let cb of checkedBoxes) {
+        const docRef = doc(db, 'users', currentUser.uid, 'wishlist', cb.dataset.id);
+        await updateDoc(docRef, { isBought: true });
+    }
+    showToast("Chúc mừng bạn đã chốt đơn thành công! 🎉");
+    loadAllData();
+});
 
 // === RENDER DỮ LIỆU ===
 async function loadAllData() {
@@ -195,7 +199,6 @@ async function loadAllData() {
     ]);
 
     let totalInc = 0, totalExp = 0, catExp = {}, historyHtml = '';
-
     incSnap.forEach(d => { totalInc += d.data().amount; historyHtml += `<li><div>${d.data().source}</div> <div class="action-btns"><span style="color:#10b981">+${formatVND(d.data().amount)}</span> <button class="btn-icon" onclick="requestDelete('income','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`; });
     expSnap.forEach(d => { 
         let amt = d.data().amount; let cat = d.data().category; totalExp += amt; catExp[cat] = (catExp[cat] || 0) + amt;
@@ -227,28 +230,40 @@ async function loadAllData() {
     document.getElementById('list-vay').innerHTML = vayHtml; document.getElementById('list-cho-vay').innerHTML = choVayHtml;
     document.getElementById('overview-vay').innerText = formatVND(totalVay); document.getElementById('overview-cho-vay').innerText = formatVND(totalChoVay);
 
-    let wishHtml = '';
-    wishSnap.forEach((d, index) => {
+    // Xóa HTML cũ của Wishlist
+    let wishPrio1 = '', wishPrio2 = '', wishPrio3 = '', wishBought = '';
+    
+    wishSnap.forEach((d) => {
         const data = d.data();
-        // Nếu có link ảnh thì hiện, không thì hiện placeholder icon
-        const img = data.image ? `<img src="${data.image}" alt="wish">` : `<div style="height:140px; background:var(--border-color); display:flex; align-items:center; justify-content:center; color:#94a3b8"><i class="fa-solid fa-image fa-2x"></i></div>`;
-        wishHtml += `
-            <div class="wish-card">
-                <span class="badge">#${index + 1}</span>
-                <input type="checkbox" class="wish-check" data-price="${data.price || 0}" onchange="calcWishlistTotal()">
-                ${img}
-                <div class="info">
-                    <h4 style="margin:0 0 5px 0">${data.name}</h4>
-                    ${data.price ? `<p style="font-weight:bold; margin:0; color:var(--primary-color)">${formatVND(data.price)}</p>` : ''}
-                    <div style="display:flex; justify-content:space-between; margin-top:15px;">
+        if (data.isBought) {
+            // Danh sách đã mua
+            wishBought += `<li><div>${data.name}<br><small>${formatVND(data.price)}</small></div> <div class="action-btns"><button class="btn-icon" onclick="requestDelete('wishlist','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`;
+        } else {
+            // Danh sách chưa mua (phân loại cột)
+            const html = `
+                <div class="wish-card prio-${data.priority}">
+                    <input type="checkbox" class="wish-check" data-price="${data.price || 0}" data-id="${d.id}" onchange="calcWishlistTotal()">
+                    <div>
+                        <h4 style="margin:0 0 5px 0; padding-right:20px;">${data.name}</h4>
+                        ${data.price ? `<p style="font-weight:bold; margin:0; color:var(--text-color)">${formatVND(data.price)}</p>` : ''}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:15px; align-items:center;">
                         ${data.link ? `<a href="${data.link}" target="_blank" style="font-size:0.85rem; color:#8b5cf6; text-decoration:none; font-weight:bold">🛒 Tới nơi mua</a>` : `<span></span>`}
                         <button class="icon-btn" onclick="requestDelete('wishlist','${d.id}')" style="color:#ef4444; padding:0"><i class="fa-solid fa-trash"></i></button>
                     </div>
-                </div>
-            </div>`;
+                </div>`;
+            if(data.priority == 1) wishPrio1 += html;
+            else if(data.priority == 2) wishPrio2 += html;
+            else wishPrio3 += html;
+        }
     });
-    document.getElementById('wishlist-grid').innerHTML = wishHtml;
-    calcWishlistTotal();
+    
+    document.getElementById('wish-prio-1').innerHTML = wishPrio1 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>';
+    document.getElementById('wish-prio-2').innerHTML = wishPrio2 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>';
+    document.getElementById('wish-prio-3').innerHTML = wishPrio3 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>';
+    document.getElementById('wish-bought-list').innerHTML = wishBought || '<li><p style="color:#94a3b8; margin:0;">Chưa chốt được món nào.</p></li>';
+    
+    calcWishlistTotal(); // Reset lại ô tính tiền
 }
 
 document.getElementById('save-budget').addEventListener('click', async () => {
