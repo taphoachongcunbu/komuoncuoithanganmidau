@@ -18,6 +18,19 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 let expenseChartInstance = null;
 
+// === KÍCH HOẠT GHI NHỚ DARK MODE ===
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+    document.body.classList.add('dark-mode');
+}
+
+document.getElementById('theme-toggle').addEventListener('click', () => { 
+    document.body.classList.toggle('dark-mode'); 
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light'); // Lưu vào bộ nhớ trình duyệt
+    if(expenseChartInstance) loadAllData(); 
+});
+
 // === BIẾN THỜI GIAN & LỌC ===
 let currentFilter = 'month'; 
 let viewDate = new Date(); 
@@ -26,7 +39,7 @@ const currentMonthStr = new Date().getFullYear() + '-' + (new Date().getMonth() 
 function getWeekBoundaries(date) {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Đẩy về thứ 2
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     const start = new Date(d.setDate(diff));
     start.setHours(0,0,0,0);
     const end = new Date(start);
@@ -122,7 +135,6 @@ function openCustomPrompt(title, defaultVal) {
     });
 }
 
-// === FIX Ô NHẬP TIỀN HOÀN HẢO ===
 function handleAmountInput(e) {
     let rawVal = e.target.value.replace(/\D/g, ""); 
     e.target.dataset.raw = rawVal || "0";
@@ -150,7 +162,6 @@ document.querySelectorAll('.amount-input').forEach(input => {
 const formatVND = (amount) => Number(amount).toLocaleString('vi-VN') + ' đ';
 
 // Auth
-document.getElementById('theme-toggle').addEventListener('click', () => { document.body.classList.toggle('dark-mode'); if(expenseChartInstance) loadAllData(); });
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -204,12 +215,21 @@ async function saveTransaction(type, amountId, selectId, otherId) {
 document.getElementById('income-form').addEventListener('submit', (e) => { e.preventDefault(); saveTransaction('income', 'income-amount', 'income-source', 'income-other'); e.target.reset(); document.getElementById('income-amount').dataset.raw = "0"; });
 document.getElementById('expense-form').addEventListener('submit', (e) => { e.preventDefault(); saveTransaction('expense', 'expense-amount', 'expense-category', 'expense-other'); e.target.reset(); document.getElementById('expense-amount').dataset.raw = "0";});
 
-// Nợ Bạn Bè
+// Nợ Bạn Bè (Đã sửa lại chung collection 'debt')
 document.getElementById('tab-d-debt').addEventListener('click', (e) => { e.target.classList.add('active'); document.getElementById('tab-d-recur').classList.remove('active'); document.getElementById('view-d-debt').style.display='block'; document.getElementById('view-d-recur').style.display='none'; });
 document.getElementById('tab-d-recur').addEventListener('click', (e) => { e.target.classList.add('active'); document.getElementById('tab-d-debt').classList.remove('active'); document.getElementById('view-d-debt').style.display='none'; document.getElementById('view-d-recur').style.display='block'; });
 
-document.getElementById('borrow-form').addEventListener('submit', async (e) => { e.preventDefault(); await addDoc(collection(db, 'users', currentUser.uid, 'debt'), { type: 'vay', amount: Number(document.getElementById('borrow-amount').dataset.raw||0), person: document.getElementById('borrow-person').value, createdAt: new Date() }); showToast('Đã lưu!'); e.target.reset(); document.getElementById('borrow-amount').dataset.raw = "0"; loadAllData(); });
-document.getElementById('lend-form').addEventListener('submit', async (e) => { e.preventDefault(); await addDoc(collection(db, 'users', currentUser.uid, 'lend'), { type: 'cho_vay', amount: Number(document.getElementById('lend-amount').dataset.raw||0), person: document.getElementById('lend-person').value, createdAt: new Date() }); showToast('Đã lưu!'); e.target.reset(); document.getElementById('lend-amount').dataset.raw = "0"; loadAllData(); });
+document.getElementById('borrow-form').addEventListener('submit', async (e) => { 
+    e.preventDefault(); 
+    await addDoc(collection(db, 'users', currentUser.uid, 'debt'), { type: 'vay', amount: Number(document.getElementById('borrow-amount').dataset.raw||0), person: document.getElementById('borrow-person').value, createdAt: new Date() }); 
+    showToast('Đã lưu!'); e.target.reset(); document.getElementById('borrow-amount').dataset.raw = "0"; loadAllData(); 
+});
+
+document.getElementById('lend-form').addEventListener('submit', async (e) => { 
+    e.preventDefault(); 
+    await addDoc(collection(db, 'users', currentUser.uid, 'debt'), { type: 'cho_vay', amount: Number(document.getElementById('lend-amount').dataset.raw||0), person: document.getElementById('lend-person').value, createdAt: new Date() }); 
+    showToast('Đã lưu!'); e.target.reset(); document.getElementById('lend-amount').dataset.raw = "0"; loadAllData(); 
+});
 
 // Trả nợ
 window.payDebt = async (debtId, type, amount, person) => {
@@ -268,8 +288,6 @@ async function loadAllData() {
     ]);
 
     let totalInc = 0, totalExp = 0, livingExp = 0, catExp = {};
-    
-    // MẢNG CHỨA TẤT CẢ GIAO DỊCH ĐỂ GOM NHÓM
     let allTransactions = [];
 
     incSnap.forEach(d => { 
@@ -292,7 +310,7 @@ async function loadAllData() {
         }
     });
 
-    // === XỬ LÝ GOM NHÓM LỊCH SỬ THEO NGÀY (LẤY 3 NGÀY GẦN NHẤT) ===
+    // LỊCH SỬ GOM NHÓM TỐI ĐA 3 NGÀY
     allTransactions.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
 
     let groupedByDate = {};
@@ -303,13 +321,11 @@ async function loadAllData() {
         groupedByDate[dateKey].push(item);
     });
 
-    // Lấy tối đa 3 ngày gần nhất có giao dịch
     const recentDateKeys = Object.keys(groupedByDate).slice(0, 3);
     
     let historyHtml = '';
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
-    
     const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = `${yesterday.getFullYear()}-${(yesterday.getMonth()+1).toString().padStart(2,'0')}-${yesterday.getDate().toString().padStart(2,'0')}`;
 
@@ -317,7 +333,7 @@ async function loadAllData() {
         historyHtml = '<p style="color:#94a3b8; text-align:center; padding: 20px;">Chưa có giao dịch nào gần đây.</p>';
     } else {
         recentDateKeys.forEach(dateKey => {
-            let labelDate = dateKey.split('-').reverse().slice(0, 2).join('/'); // DD/MM
+            let labelDate = dateKey.split('-').reverse().slice(0, 2).join('/');
             if (dateKey === todayStr) labelDate = "Hôm nay (" + labelDate + ")";
             else if (dateKey === yesterdayStr) labelDate = "Hôm qua (" + labelDate + ")";
             else labelDate = "Ngày " + labelDate;
@@ -364,18 +380,28 @@ async function loadAllData() {
     }
     drawChart(catExp);
 
+    // RENDER SỔ NỢ (VAY & CHO VAY)
     let vayHtml = '', choVayHtml = '';
-    debtSnap.forEach(d => { const data = d.data(); const html = `<li><div><strong>${data.person}</strong><br><small>${formatVND(data.amount)}</small></div> <div class="action-btns"><button class="btn-icon pay" onclick="payDebt('${d.id}', '${data.type}', ${data.amount}, '${data.person}')"><i class="fa-solid fa-check"></i></button> <button class="btn-icon" onclick="requestDelete('debt','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`; if(data.type === 'vay') vayHtml += html; else choVayHtml += html; });
-    document.getElementById('list-vay').innerHTML = vayHtml || 'Trống.'; document.getElementById('list-cho-vay').innerHTML = choVayHtml || 'Trống.';
+    debtSnap.forEach(d => { 
+        const data = d.data(); 
+        const html = `<li><div><strong>${data.person}</strong><br><small>${formatVND(data.amount)}</small></div> <div class="action-btns"><button class="btn-icon pay" onclick="payDebt('${d.id}', '${data.type}', ${data.amount}, '${data.person}')"><i class="fa-solid fa-check"></i></button> <button class="btn-icon" onclick="requestDelete('debt','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`; 
+        if(data.type === 'vay') vayHtml += html; 
+        else if(data.type === 'cho_vay') choVayHtml += html; 
+    });
+    document.getElementById('list-vay').innerHTML = vayHtml || '<p style="color:#94a3b8; font-size:0.9rem;">Trống.</p>'; 
+    document.getElementById('list-cho-vay').innerHTML = choVayHtml || '<p style="color:#94a3b8; font-size:0.9rem;">Trống.</p>';
 
+    // RENDER HÓA ĐƠN
     let dueHtml = '', paidHtml = '';
     recurSnap.forEach(d => {
         const data = d.data(); const isDue = data.lastPaidMonth !== currentMonthStr && !data.isCompleted; const statusText = data.type === 'installment' ? `Trả góp (${data.paidMonths}/${data.totalMonths} tháng)` : (data.type === 'variable' ? 'Linh hoạt' : 'Cố định');
         const html = `<li><div><strong>${data.name}</strong><br><small style="color:#64748b">${statusText} | ~${formatVND(data.baseAmount)}</small></div> <div class="action-btns">${isDue ? `<button class="btn-icon pay" style="background:#8b5cf6; color:white; border-radius:15px; padding:6px 15px;" onclick="payRecurring('${d.id}', '${data.type}', ${data.baseAmount}, '${data.name}', ${data.totalMonths}, ${data.paidMonths})">Thanh toán</button>` : ''} <button class="btn-icon" onclick="requestDelete('recurring','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`;
         if (data.isCompleted) paidHtml += html; else if (isDue) dueHtml += html; else paidHtml += html;
     });
-    document.getElementById('recur-due-list').innerHTML = dueHtml || '<p style="color:#10b981;">Tuyệt vời! Tháng này đã thanh toán hết các loại hóa đơn. 🎉</p>'; document.getElementById('recur-paid-list').innerHTML = paidHtml || '';
+    document.getElementById('recur-due-list').innerHTML = dueHtml || '<p style="color:#10b981;">Tuyệt vời! Tháng này đã thanh toán hết các loại hóa đơn. 🎉</p>'; 
+    document.getElementById('recur-paid-list').innerHTML = paidHtml || '';
 
+    // RENDER WISHLIST
     let wishPrio1 = '', wishPrio2 = '', wishPrio3 = '', wishBought = '';
     wishSnap.forEach((d) => {
         const data = d.data();
@@ -384,7 +410,10 @@ async function loadAllData() {
             if(data.priority == 1) wishPrio1 += html; else if(data.priority == 2) wishPrio2 += html; else wishPrio3 += html;
         }
     });
-    document.getElementById('wish-prio-1').innerHTML = wishPrio1 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>'; document.getElementById('wish-prio-2').innerHTML = wishPrio2 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>'; document.getElementById('wish-prio-3').innerHTML = wishPrio3 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>'; document.getElementById('wish-bought-list').innerHTML = wishBought || '<li><p style="color:#94a3b8; margin:0;">Chưa chốt được món nào.</p></li>';
+    document.getElementById('wish-prio-1').innerHTML = wishPrio1 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>'; 
+    document.getElementById('wish-prio-2').innerHTML = wishPrio2 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>'; 
+    document.getElementById('wish-prio-3').innerHTML = wishPrio3 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>'; 
+    document.getElementById('wish-bought-list').innerHTML = wishBought || '<li><p style="color:#94a3b8; margin:0;">Chưa chốt được món nào.</p></li>';
     calcWishlistTotal();
 }
 
@@ -395,3 +424,4 @@ function drawChart(catExp) {
     if(data.length === 0) { labels.push("Chưa có"); data.push(1); }
     expenseChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#f87171', '#60a5fa', '#34d399', '#facc15', '#c084fc', '#fb923c'], borderWidth: isDark ? 4 : 2, borderColor: isDark ? '#1e293b' : '#fff' }] }, options: { plugins: { legend: { position: 'bottom', labels: { color: isDark ? '#f1f5f9' : '#334155', font: { family: 'Quicksand', weight: 600 } } } }, cutout: '65%' } });
 }
+ 
