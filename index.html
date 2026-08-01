@@ -41,26 +41,34 @@
     <main id="app-content" style="display: none;">
         <div class="smart-input-container">
             <i class="fa-solid fa-robot"></i>
-            <input type="text" id="smart-input" placeholder="Gõ: 'chi 50k đổ xăng' hoặc 'chi 30k matcha'...">
+            <input type="text" id="smart-input" placeholder="Gõ: 'chi 50k đổ xăng' hoặc 'thu 5tr lương'...">
             <button id="btn-smart-submit"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
 
         <nav class="tabs">
             <button class="tab-btn active" data-target="overview">Tổng quan</button>
             <button class="tab-btn" data-target="income">Thu / Chi</button>
-            <button class="tab-btn" data-target="debt">Sổ Nợ</button>
+            <button class="tab-btn" data-target="debt">Nợ & Định kỳ</button>
             <button class="tab-btn" data-target="wishlist">Wishlist</button>
         </nav>
 
         <!-- TỔNG QUAN -->
         <section id="overview" class="tab-content active">
+            <!-- BỘ LỌC THỜI GIAN -->
+            <div class="time-filters">
+                <button class="filter-btn" data-filter="day">Hôm nay</button>
+                <button class="filter-btn" data-filter="week">Tuần này</button>
+                <button class="filter-btn active" data-filter="month">Tháng này</button>
+                <input type="date" id="filter-custom" class="filter-date" title="Chọn ngày tùy ý">
+            </div>
+
             <div class="budget-section">
-                Hạn mức: <input type="text" id="budget-limit" class="amount-input" placeholder="VD: 5.000.000"> đ
+                Hạn mức tháng: <input type="text" id="budget-limit" class="amount-input" placeholder="VD: 5.000.000"> đ
                 <button id="save-budget" class="btn-small">Lưu</button>
             </div>
             <div id="budget-warning" class="warning-alert" style="display:none;"></div>
             
-            <h3 style="text-align: center; margin-bottom: 5px; opacity: 0.8;">Cơ cấu chi tiêu</h3>
+            <h3 style="text-align: center; margin-bottom: 5px; opacity: 0.8;">Cơ cấu chi tiêu (<span id="lbl-time">Tháng này</span>)</h3>
             <div class="chart-container"><canvas id="expenseChart"></canvas></div>
 
             <div class="summary-cards">
@@ -72,11 +80,6 @@
                     <i class="fa-solid fa-arrow-trend-down"></i>
                     <h3>Tổng Chi</h3><p id="total-expense">0 đ</p>
                 </div>
-            </div>
-            
-            <div class="debt-overview">
-                <div><i class="fa-solid fa-hand-holding-dollar"></i> Đang mượn: <b id="overview-vay" style="color:#e74c3c">0 đ</b></div>
-                <div><i class="fa-solid fa-sack-dollar"></i> Cho mượn: <b id="overview-cho-vay" style="color:#27ae60">0 đ</b></div>
             </div>
         </section>
 
@@ -90,7 +93,6 @@
                         <select id="income-source">
                             <option value="Lương">Lương 💰</option>
                             <option value="Thưởng">Thưởng 🎁</option>
-                            <option value="Kinh doanh">Kinh doanh 📈</option>
                             <option value="Khác">Khác ✏️</option>
                         </select>
                         <input type="text" id="income-other" placeholder="Nhập tên nguồn thu..." style="display:none;">
@@ -113,38 +115,69 @@
                     </form>
                 </div>
             </div>
-            <h3>Lịch sử</h3>
+            <h3>Lịch sử giao dịch</h3>
             <ul id="history-list" class="list-ui"></ul>
         </section>
 
-        <!-- SỔ NỢ (BẢN UPDATE) -->
+        <!-- NỢ & ĐỊNH KỲ -->
         <section id="debt" class="tab-content">
-            <form id="debt-form" class="inline-form">
-                <select id="debt-type">
-                    <option value="vay">Đang mượn người ta</option>
-                    <option value="cho_vay">Cho người ta mượn</option>
-                </select>
-                <input type="text" id="debt-amount" class="amount-input" placeholder="Số tiền" required>
-                <input type="text" id="debt-person" placeholder="Tên người mượn / cho mượn / Ngân hàng" required>
-                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                    <input type="date" id="debt-deadline" style="flex: 1; margin: 0;" title="Hạn trả (Không bắt buộc)">
-                    <input type="text" id="debt-note" style="flex: 1; margin: 0;" placeholder="Ghi chú (VD: Trả góp tháng 1/6)">
+            <div class="wish-tabs-container">
+                <button class="wish-sub-tab active" id="tab-d-debt">Sổ Bạn Bè/Vay mượn</button>
+                <button class="wish-sub-tab" id="tab-d-recur">Hóa đơn & Trả góp</button>
+            </div>
+
+            <!-- TAB CON: NỢ BẠN BÈ -->
+            <div id="view-d-debt">
+                <div class="form-group-split">
+                    <form id="borrow-form" class="form-box" style="border: 2px solid #fca5a5;">
+                        <h3 style="color:#ef4444">Mình mượn người ta</h3>
+                        <input type="text" id="borrow-amount" class="amount-input" placeholder="Số tiền" required>
+                        <input type="text" id="borrow-person" placeholder="Tên chủ nợ" required>
+                        <button type="submit" class="btn-danger">Lưu vào sổ</button>
+                    </form>
+                    <form id="lend-form" class="form-box" style="border: 2px solid #86efac;">
+                        <h3 style="color:#10b981">Cho người ta mượn</h3>
+                        <input type="text" id="lend-amount" class="amount-input" placeholder="Số tiền" required>
+                        <input type="text" id="lend-person" placeholder="Tên con nợ" required>
+                        <button type="submit" class="btn-primary">Lưu vào sổ</button>
+                    </form>
                 </div>
-                <button type="submit" class="btn-primary">Ghi vào sổ</button>
-            </form>
-            <div class="debt-split">
-                <div class="debt-col">
-                    <h4 style="color: #e74c3c;">Các khoản đang mượn/Trả góp</h4>
-                    <ul id="list-vay" class="list-ui"></ul>
+                <div class="debt-split">
+                    <div class="debt-col">
+                        <h4 style="color: #e74c3c;">Các khoản đang mượn</h4>
+                        <ul id="list-vay" class="list-ui"></ul>
+                    </div>
+                    <div class="debt-col">
+                        <h4 style="color: #27ae60;">Các khoản cho mượn</h4>
+                        <ul id="list-cho-vay" class="list-ui"></ul>
+                    </div>
                 </div>
-                <div class="debt-col">
-                    <h4 style="color: #27ae60;">Các khoản cho mượn</h4>
-                    <ul id="list-cho-vay" class="list-ui"></ul>
-                </div>
+            </div>
+
+            <!-- TAB CON: TRẢ GÓP / ĐỊNH KỲ -->
+            <div id="view-d-recur" style="display:none;">
+                <form id="recur-form" class="form-box" style="margin-bottom: 20px;">
+                    <h3>Thêm khoản định kỳ hàng tháng</h3>
+                    <input type="text" id="recur-name" placeholder="Tên (VD: Trả góp đt, Tiền nhà, Netflix)" required>
+                    <select id="recur-type">
+                        <option value="fixed">Cố định (Netflix, Spotify...)</option>
+                        <option value="variable">Thay đổi theo tháng (Tiền điện, nước...)</option>
+                        <option value="installment">Trả góp (Có giới hạn số tháng)</option>
+                    </select>
+                    <input type="text" id="recur-amount" class="amount-input" placeholder="Số tiền (Ghi 0 nếu chưa biết)" required>
+                    <input type="number" id="recur-months" placeholder="Tổng số tháng trả góp (Bỏ trống nếu vô hạn)" style="display:none;">
+                    <button type="submit" class="btn-primary" style="background:#8b5cf6; color:white;">Lưu hóa đơn</button>
+                </form>
+
+                <h4 style="color: #e74c3c; border-bottom: 2px solid #fca5a5; padding-bottom: 5px;">🚨 Cần thanh toán tháng này!</h4>
+                <ul id="recur-due-list" class="list-ui"></ul>
+
+                <h4 style="color: #10b981; margin-top: 20px;">✅ Đã thanh toán / Đã xong</h4>
+                <ul id="recur-paid-list" class="list-ui" style="opacity: 0.7;"></ul>
             </div>
         </section>
 
-        <!-- WISHLIST -->
+        <!-- WISHLIST (Giữ nguyên như Update 3) -->
         <section id="wishlist" class="tab-content">
             <form id="wishlist-form" class="inline-form">
                 <input type="text" id="wish-name" placeholder="Tên món đồ (VD: Giày thể thao)" required>
@@ -170,10 +203,8 @@
                 </div>
                 <h4 class="prio-title" style="color:#ef4444">🔥 Must have</h4>
                 <div id="wish-prio-1" class="grid-ui"></div>
-                
                 <h4 class="prio-title" style="color:#f59e0b; margin-top:20px;">✨ Có cũng được</h4>
                 <div id="wish-prio-2" class="grid-ui"></div>
-                
                 <h4 class="prio-title" style="color:#64748b; margin-top:20px;">🤷‍♀️ Chưa cần lắm</h4>
                 <div id="wish-prio-3" class="grid-ui"></div>
             </div>
