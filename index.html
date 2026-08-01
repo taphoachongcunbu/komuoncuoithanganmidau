@@ -117,7 +117,7 @@
             <ul id="history-list" class="list-ui"></ul>
         </section>
 
-        <!-- SỔ NỢ -->
+        <!-- SỔ NỢ (BẢN UPDATE) -->
         <section id="debt" class="tab-content">
             <form id="debt-form" class="inline-form">
                 <select id="debt-type">
@@ -125,12 +125,16 @@
                     <option value="cho_vay">Cho người ta mượn</option>
                 </select>
                 <input type="text" id="debt-amount" class="amount-input" placeholder="Số tiền" required>
-                <input type="text" id="debt-person" placeholder="Tên người mượn / cho mượn" required>
+                <input type="text" id="debt-person" placeholder="Tên người mượn / cho mượn / Ngân hàng" required>
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <input type="date" id="debt-deadline" style="flex: 1; margin: 0;" title="Hạn trả (Không bắt buộc)">
+                    <input type="text" id="debt-note" style="flex: 1; margin: 0;" placeholder="Ghi chú (VD: Trả góp tháng 1/6)">
+                </div>
                 <button type="submit" class="btn-primary">Ghi vào sổ</button>
             </form>
             <div class="debt-split">
                 <div class="debt-col">
-                    <h4 style="color: #e74c3c;">Các khoản đang mượn</h4>
+                    <h4 style="color: #e74c3c;">Các khoản đang mượn/Trả góp</h4>
                     <ul id="list-vay" class="list-ui"></ul>
                 </div>
                 <div class="debt-col">
@@ -164,7 +168,6 @@
                     <div class="wishlist-total">Đang chọn: <b id="wishlist-selected-total" style="color:var(--primary-color)">0 đ</b></div>
                     <button id="btn-mark-bought" class="btn-primary btn-small" style="display:none; background:#10b981; color:white;">Mua xong!</button>
                 </div>
-                <!-- 3 Cột / Group cho 3 mức ưu tiên -->
                 <h4 class="prio-title" style="color:#ef4444">🔥 Must have</h4>
                 <div id="wish-prio-1" class="grid-ui"></div>
                 
