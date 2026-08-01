@@ -47,8 +47,8 @@ function updateTimeUI() {
     } else if (currentFilter === 'month') {
         text = `Tháng ${viewDate.getMonth()+1}/${viewDate.getFullYear()}`;
     }
-    lbl.innerText = text;
-    lblHist.innerText = text;
+    if (lbl) lbl.innerText = text;
+    if (lblHist) lblHist.innerText = text;
     loadAllData();
 }
 
@@ -57,7 +57,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
         currentFilter = e.target.getAttribute('data-filter');
-        viewDate = new Date(); // Reset về hiện tại khi đổi tab
+        viewDate = new Date();
         updateTimeUI();
     });
 });
@@ -109,7 +109,7 @@ document.getElementById('confirm-delete').onclick = async () => {
 };
 window.requestDelete = (type, id) => { itemToDelete = { type, id }; document.getElementById('confirm-modal').style.display = 'flex'; };
 
-// Modal Nhập Tiền (Thay cho prompt mặc định)
+// Modal Nhập Tiền Tùy Chỉnh
 function openCustomPrompt(title, defaultVal) {
     return new Promise((resolve) => {
         const modal = document.getElementById('prompt-modal');
@@ -124,27 +124,31 @@ function openCustomPrompt(title, defaultVal) {
     });
 }
 
-// === FIX FORMAT SỐ TIỀN KHÔNG NHẢY CON TRỎ ===
-function formatCurrencyInput(e) {
-    let input = e.target;
-    // Lấy vị trí con trỏ hiện tại
-    let cursorPosition = input.selectionStart;
-    let oldLength = input.value.length;
-
-    let val = input.value.replace(/\D/g, ""); 
-    if (val) {
-        input.value = Number(val).toLocaleString('vi-VN'); 
-        input.dataset.raw = val; 
-    } else { 
-        input.value = ""; input.dataset.raw = "0"; 
-    }
-
-    // Tính toán lại vị trí con trỏ
-    let newLength = input.value.length;
-    cursorPosition = cursorPosition + (newLength - oldLength);
-    input.setSelectionRange(cursorPosition, cursorPosition);
+// === FIX Ô NHẬP TIỀN HOÀN HẢO (KHÔNG LỖI NHẢY SỐ) ===
+function handleAmountInput(e) {
+    let rawVal = e.target.value.replace(/\D/g, ""); // Chỉ giữ lại số
+    e.target.dataset.raw = rawVal || "0";
+    e.target.value = rawVal; // Để số thuần khi đang gõ
 }
-document.querySelectorAll('.amount-input').forEach(input => input.addEventListener('input', formatCurrencyInput));
+
+function handleAmountBlur(e) {
+    let rawVal = e.target.dataset.raw || "0";
+    if (rawVal !== "0" && rawVal !== "") {
+        e.target.value = Number(rawVal).toLocaleString('vi-VN'); // Phẩy số khi gõ xong
+    }
+}
+
+function handleAmountFocus(e) {
+    let rawVal = e.target.dataset.raw || "";
+    e.target.value = rawVal === "0" ? "" : rawVal; // Hiện lại số thuần khi nhấp lại
+}
+
+document.querySelectorAll('.amount-input').forEach(input => {
+    input.addEventListener('input', handleAmountInput);
+    input.addEventListener('blur', handleAmountBlur);
+    input.addEventListener('focus', handleAmountFocus);
+});
+
 const formatVND = (amount) => Number(amount).toLocaleString('vi-VN') + ' đ';
 
 const formatDateTime = (timestamp) => {
@@ -177,14 +181,14 @@ function handleSelectOther(selectId, inputId) {
 handleSelectOther('income-source', 'income-other'); handleSelectOther('expense-category', 'expense-other');
 document.getElementById('recur-type').addEventListener('change', (e) => { document.getElementById('recur-months').style.display = e.target.value === 'installment' ? 'block' : 'none'; });
 
-// Chatbot
+// Chatbot Smart Input
 document.getElementById('btn-smart-submit').addEventListener('click', processSmartInput);
 async function processSmartInput() {
     const text = document.getElementById('smart-input').value.trim().toLowerCase();
     if(!text) return;
     let amount = 0; const match = text.match(/(\d+)\s*(k|tr|đ|d)/i) || text.match(/(\d+)/);
     if (match) { let num = parseInt(match[1]); let unit = match[2] || ''; if (unit === 'k') amount = num * 1000; else if (unit === 'tr') amount = num * 1000000; else amount = num; }
-    if(amount === 0) { showToast("Vui lòng ghi số tiền (VD: 50k)", "error"); return; }
+    if(amount === 0) { showToast("Vui lòng ghi rõ số tiền (VD: 50k)", "error"); return; }
     let type = text.includes('thu') || text.includes('lương') ? 'income' : 'expense';
     const cleanText = text.replace(/[.,!?]/g, " "); const words = cleanText.split(/\s+/);
     let category = 'Khác';
@@ -234,12 +238,11 @@ document.getElementById('recur-form').addEventListener('submit', async (e) => {
     showToast('Đã thiết lập hóa đơn!'); e.target.reset(); document.getElementById('recur-amount').dataset.raw = "0"; document.getElementById('recur-months').style.display='none'; loadAllData();
 });
 
-// THANH TOÁN HÓA ĐƠN VỚI CUSTOM PROMPT
 window.payRecurring = async (id, type, baseAmount, name, totalMonths, paidMonths) => {
     let finalAmount = baseAmount;
     if (type === 'variable') {
         const inputVal = await openCustomPrompt(`Tiền [${name}] tháng này:`, baseAmount);
-        if (inputVal === null) return; // Người dùng ấn Hủy
+        if (inputVal === null) return;
         finalAmount = Number(inputVal);
     }
     
@@ -284,7 +287,7 @@ async function loadAllData() {
             let amt = d.data().amount; let cat = d.data().category; 
             totalExp += amt; catExp[cat] = (catExp[cat] || 0) + amt;
             
-            // LOGIC HẠN MỨC: Chỉ tính sinh hoạt phí, bỏ qua hóa đơn & trả nợ
+            // HẠN MỨC SINH HOẠT: Không tính tiền trả nợ và hóa đơn
             if (!cat.startsWith('Trả nợ') && !cat.startsWith('Thanh toán Hóa đơn')) {
                 livingExp += amt;
             }
@@ -297,11 +300,14 @@ async function loadAllData() {
     document.getElementById('total-expense').innerText = formatVND(totalExp);
     document.getElementById('history-list').innerHTML = historyHtml || '<p style="color:#94a3b8; text-align:center; padding: 20px;">Không có giao dịch nào.</p>';
 
-    // HẠN MỨC SINH HOẠT
+    // CẢNH BÁO HẠN MỨC SINH HOẠT
     let budget = budgetDoc.exists() ? budgetDoc.data().limit : 0;
     if(budget > 0) {
         let inputB = document.getElementById('budget-limit');
-        inputB.value = Number(budget).toLocaleString('vi-VN'); inputB.dataset.raw = budget;
+        if (document.activeElement !== inputB) {
+            inputB.value = Number(budget).toLocaleString('vi-VN');
+            inputB.dataset.raw = budget;
+        }
         const warningDiv = document.getElementById('budget-warning'); 
         const percent = (livingExp / budget) * 100;
         if(percent >= 100) { warningDiv.style.display = 'block'; warningDiv.innerText = `🚨 Đã tiêu sinh hoạt vượt hạn mức (${Math.round(percent)}%)`; }
