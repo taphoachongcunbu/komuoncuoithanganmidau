@@ -19,7 +19,7 @@ body.dark-mode {
 }
 
 body {
-    font-family: 'Quicksand', sans-serif; /* Font bay bổng nhẹ nhàng */
+    font-family: 'Quicksand', sans-serif;
     background-color: var(--bg-color); color: var(--text-color);
     margin: 0; padding: 0; transition: 0.3s;
 }
@@ -92,9 +92,6 @@ input, select {
 /* Wishlist */
 .wishlist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .wishlist-total { background: var(--card-bg); padding: 10px 15px; border-radius: 12px; box-shadow: var(--shadow); font-size: 1.1rem; }
-.file-upload { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.file-upload label { background: var(--border-color); padding: 12px 15px; border-radius: 12px; cursor: pointer; font-weight: 600; flex-shrink: 0; }
-.file-upload span { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .grid-ui { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
 .wish-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); position: relative; }
