@@ -1,7 +1,7 @@
 :root {
     --bg-color: #f8fafc; --text-color: #334155; --primary-color: #86efac; --primary-hover: #4ade80;
     --danger-color: #fca5a5; --danger-hover: #f87171; --card-bg: #ffffff; --border-color: #e2e8f0;
-    --shadow: 0 4px 15px rgba(0,0,0,0.03);
+    --shadow: 0 4px 15px rgba(0,0,0,0.04);
 }
 
 body.dark-mode {
@@ -35,17 +35,24 @@ main { max-width: 750px; margin: 20px auto; padding: 0 15px; padding-bottom: 50p
 /* Inputs */
 input, select { width: 100%; padding: 14px; margin-bottom: 12px; font-weight: 600; border: 1px solid var(--border-color); border-radius: 12px; background-color: var(--bg-color); color: var(--text-color); font-family: inherit; box-sizing: border-box; font-size: 1rem; }
 
-.smart-input-container { display: flex; gap: 10px; background: var(--card-bg); padding: 8px; border-radius: 30px; box-shadow: var(--shadow); margin-bottom: 20px; align-items: center; }
-.smart-input-container i { color: #10b981; font-size: 1.4rem; margin-left: 15px; }
-.smart-input-container input { margin: 0; border: none; background: transparent; }
+/* FIX CHATBOT ĐẸP MẮT */
+.smart-input-container { display: flex; gap: 10px; background: var(--card-bg); padding: 10px; border-radius: 30px; box-shadow: var(--shadow); margin-bottom: 20px; align-items: center; border: 1px solid var(--border-color); }
+.bot-icon { background: #e0f2fe; color: #0ea5e9; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+.dark-mode .bot-icon { background: #0c4a6e; }
+.smart-input-container input { margin: 0; border: none; background: transparent; padding: 5px; }
 .smart-input-container input:focus { outline: none; }
-#btn-smart-submit { background: #10b981; color: white; border-radius: 50%; width: 45px; height: 45px; padding: 0;}
+#btn-smart-submit { background: #10b981; color: white; border-radius: 50%; width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4); transition: transform 0.2s;}
+#btn-smart-submit:hover { transform: scale(1.05); }
 
-/* Time Filters */
-.time-filters { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;}
-.filter-btn { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; flex-shrink: 0;}
-.filter-btn.active { background: #8b5cf6; color: white; border: none; }
-.filter-date { width: auto; margin: 0; padding: 8px; border-radius: 20px; flex-shrink: 0;}
+/* BỘ LỌC THỜI GIAN MỚI */
+.time-nav-container { background: var(--card-bg); padding: 15px; border-radius: 15px; box-shadow: var(--shadow); margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px; }
+.time-filters { display: flex; gap: 10px; justify-content: center; }
+.filter-btn { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 8px 20px; border-radius: 20px; font-size: 0.9rem; }
+.filter-btn.active { background: #6366f1; color: white; border: none; }
+.time-arrows { display: flex; justify-content: space-between; align-items: center; background: var(--bg-color); border-radius: 12px; padding: 5px; }
+.arrow-btn { background: transparent; color: var(--text-color); font-size: 1.2rem; padding: 10px 20px; }
+.arrow-btn:hover { background: var(--border-color); }
+#lbl-time-display { font-weight: 700; font-size: 1.1rem; color: #6366f1;}
 
 /* Cards & Charts */
 .chart-container { width: 100%; max-width: 280px; margin: 0 auto 20px auto; }
@@ -55,8 +62,9 @@ input, select { width: 100%; padding: 14px; margin-bottom: 12px; font-weight: 60
 .card p { font-size: 1.6rem; font-weight: 700; margin: 0; }
 .card.thu { border-bottom: 5px solid #10b981; }
 .card.chi { border-bottom: 5px solid #ef4444; }
-.budget-section { background: var(--card-bg); padding: 15px; border-radius: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow);}
-.budget-section input { margin: 0; width: 120px; }
+.budget-section { background: var(--card-bg); padding: 15px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow);}
+.budget-section input { margin: 0; width: 130px; }
+.warning-alert { background: #fee2e2; color: #dc2626; padding: 12px; border-radius: 12px; font-weight: bold; margin-bottom: 15px; text-align: center;}
 
 /* Forms & Lists */
 .form-group-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 25px; }
@@ -69,15 +77,13 @@ input, select { width: 100%; padding: 14px; margin-bottom: 12px; font-weight: 60
 .btn-icon { background: var(--border-color); color: var(--text-color); border-radius: 8px; padding: 6px 10px; font-size: 0.9rem; }
 .btn-icon.pay { background: #d1fae5; color: #065f46; }
 
-/* Sub Tabs */
+/* Sub Tabs Wishlist */
 .wish-tabs-container { display: flex; gap: 10px; margin: 20px 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
 .wish-sub-tab { background: transparent; color: var(--text-color); padding: 8px 15px; border-radius: 10px; opacity: 0.7; }
 .wish-sub-tab.active { background: var(--card-bg); box-shadow: var(--shadow); opacity: 1; border: 1px solid var(--border-color); color: #10b981;}
-
 .wishlist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: var(--card-bg); padding: 10px 15px; border-radius: 12px; box-shadow: var(--shadow);}
 .wishlist-total { font-size: 1.1rem; }
 .prio-title { border-bottom: 2px dashed var(--border-color); padding-bottom: 5px; margin-bottom: 10px;}
-
 .grid-ui { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
 .wish-card { background: var(--card-bg); border-radius: 15px; padding: 15px; box-shadow: var(--shadow); position: relative; border-left: 5px solid var(--primary-color); display: flex; flex-direction: column; justify-content: space-between;}
 .wish-card.prio-1 { border-left-color: #ef4444; }
@@ -85,11 +91,13 @@ input, select { width: 100%; padding: 14px; margin-bottom: 12px; font-weight: 60
 .wish-card.prio-3 { border-left-color: #64748b; }
 .wish-check { position: absolute; top: 15px; right: 15px; transform: scale(1.5); cursor: pointer; }
 
-/* Custom Modal & Toast */
+/* MODALS */
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
-.modal-content { background: var(--card-bg); padding: 25px; border-radius: 20px; width: 300px; text-align: center; animation: fadeIn 0.2s; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+.modal-content { background: var(--card-bg); padding: 25px; border-radius: 20px; width: 320px; text-align: center; animation: fadeIn 0.2s; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
 .modal-actions { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
+#prompt-modal input { text-align: center; font-size: 1.5rem; font-weight: bold; margin-top: 15px;}
 
+/* Toast */
 #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
 .toast { background: var(--card-bg); color: var(--text-color); padding: 15px 20px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.15); border-left: 5px solid var(--primary-color); display: flex; align-items: center; gap: 12px; font-weight: 600; animation: slideIn 0.3s forwards; }
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
