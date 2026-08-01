@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sổ Thu Chi Đám Mây ☁️</title>
-    <!-- Font Quicksand bay bổng nhưng dễ đọc -->
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,7 +12,6 @@
 <body>
     <div id="toast-container"></div>
 
-    <!-- Hộp thoại xác nhận Xóa tùy chỉnh -->
     <div id="confirm-modal" class="modal">
         <div class="modal-content">
             <h3>Xác nhận xóa?</h3>
@@ -150,11 +148,7 @@
             <form id="wishlist-form" class="inline-form">
                 <input type="text" id="wish-name" placeholder="Tên món đồ" required>
                 <input type="text" id="wish-price" class="amount-input" placeholder="Giá tiền (để nhẩm tính)">
-                <div class="file-upload">
-                    <label for="wish-image-file"><i class="fa-solid fa-cloud-arrow-up"></i> Tải ảnh lên</label>
-                    <input type="file" id="wish-image-file" accept="image/*" style="display: none;">
-                    <span id="file-name">Chưa chọn ảnh</span>
-                </div>
+                <input type="url" id="wish-image" placeholder="Link ảnh (Optional - dán link copy từ web)">
                 <input type="url" id="wish-link" placeholder="Link mua hàng (Optional)">
                 <select id="wish-priority">
                     <option value="1">🔥 Must have</option>
