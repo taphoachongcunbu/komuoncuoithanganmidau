@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-// THÊM `updateDoc` để cập nhật trạng thái Đã mua
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, deleteDoc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -45,7 +44,7 @@ window.requestDelete = (type, id) => {
     document.getElementById('confirm-modal').style.display = 'flex';
 };
 
-// === FORMAT SỐ TIỀN CÓ DẤU CHẤM ===
+// === FORMAT SỐ TIỀN & NGÀY THÁNG ===
 function formatCurrencyInput(e) {
     let val = e.target.value.replace(/\D/g, ""); 
     if (val) {
@@ -54,6 +53,10 @@ function formatCurrencyInput(e) {
 }
 document.querySelectorAll('.amount-input').forEach(input => input.addEventListener('input', formatCurrencyInput));
 const formatVND = (amount) => Number(amount).toLocaleString('vi-VN') + ' đ';
+const formatDate = (dateString) => {
+    const d = new Date(dateString);
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+};
 
 // UI Controls & Auth
 document.getElementById('theme-toggle').addEventListener('click', () => { document.body.classList.toggle('dark-mode'); if(expenseChartInstance) loadAllData(); });
@@ -89,7 +92,7 @@ function handleSelectOther(selectId, inputId) {
 handleSelectOther('income-source', 'income-other');
 handleSelectOther('expense-category', 'expense-other');
 
-// === CHATBOT BẢN NÂNG CẤP (TỰ ĐỘNG PHÂN LOẠI) ===
+// === CHATBOT "THÔNG MINH HƠN" (FIX LỖI CHỮ ĂN/XĂNG) ===
 document.getElementById('btn-smart-submit').addEventListener('click', processSmartInput);
 async function processSmartInput() {
     const text = document.getElementById('smart-input').value.trim().toLowerCase();
@@ -104,12 +107,15 @@ async function processSmartInput() {
 
     let type = text.includes('thu') || text.includes('lương') ? 'income' : 'expense';
     
-    // Tự động phân tích từ khóa -> Danh mục
+    // Tách riêng từng từ để không bị dính lỗi từ này chứa từ kia
+    const cleanText = text.replace(/[.,!?]/g, " ");
+    const words = cleanText.split(/\s+/);
+    
     let category = 'Khác';
-    if (/ăn|uống|cà phê|matcha|phở|cơm|bún|trà/i.test(text)) category = 'Ăn uống';
-    else if (/xăng|xe|grab|taxi|bus/i.test(text)) category = 'Di chuyển';
-    else if (/áo|quần|giày|shopee|lazada|mỹ phẩm/i.test(text)) category = 'Mua sắm';
-    else if (/điện|nước|nhà|trọ|wifi/i.test(text)) category = 'Tiền nhà/Điện nước';
+    if (words.some(w => ['ăn', 'uống', 'cafe', 'cà', 'phê', 'matcha', 'phở', 'cơm', 'bún', 'trà'].includes(w))) category = 'Ăn uống';
+    else if (words.some(w => ['xăng', 'xe', 'grab', 'taxi', 'bus', 'be'].includes(w))) category = 'Di chuyển';
+    else if (words.some(w => ['áo', 'quần', 'giày', 'shopee', 'lazada', 'tiktok', 'mỹ'].includes(w))) category = 'Mua sắm';
+    else if (words.some(w => ['điện', 'nước', 'nhà', 'trọ', 'wifi'].includes(w))) category = 'Tiền nhà/Điện nước';
 
     const dataObj = { amount: amount, createdAt: new Date() };
     if (type === 'expense') dataObj.category = category; else dataObj.source = category;
@@ -132,22 +138,35 @@ async function saveTransaction(type, amountId, selectId, otherId) {
 document.getElementById('income-form').addEventListener('submit', (e) => { e.preventDefault(); saveTransaction('income', 'income-amount', 'income-source', 'income-other'); e.target.reset(); document.getElementById('income-other').style.display='none'; document.getElementById('income-amount').dataset.raw = "0"; });
 document.getElementById('expense-form').addEventListener('submit', (e) => { e.preventDefault(); saveTransaction('expense', 'expense-amount', 'expense-category', 'expense-other'); e.target.reset(); document.getElementById('expense-other').style.display='none'; document.getElementById('expense-amount').dataset.raw = "0";});
 
+// === LOGIC NỢ & TRẢ GÓP ===
 window.payDebt = async (debtId, type, amount, person) => {
     await deleteDoc(doc(db, 'users', currentUser.uid, 'debt', debtId));
-    if (type === 'vay') { await addDoc(collection(db, 'users', currentUser.uid, 'expense'), { amount: amount, category: `Trả nợ (${person})`, createdAt: new Date() }); showToast("Đã thanh toán! Tự động ghi vào khoản Chi."); } 
+    if (type === 'vay') { await addDoc(collection(db, 'users', currentUser.uid, 'expense'), { amount: amount, category: `Thanh toán nợ/trả góp (${person})`, createdAt: new Date() }); showToast("Đã thanh toán! Tự động ghi vào khoản Chi."); } 
     else { await addDoc(collection(db, 'users', currentUser.uid, 'income'), { amount: amount, source: `Thu nợ (${person})`, createdAt: new Date() }); showToast("Đã đòi được tiền! Tự động ghi vào khoản Thu."); }
     loadAllData();
 };
 
 document.getElementById('debt-form').addEventListener('submit', async (e) => {
-    e.preventDefault(); const amount = Number(document.getElementById('debt-amount').dataset.raw || 0);
-    await addDoc(collection(db, 'users', currentUser.uid, 'debt'), { type: document.getElementById('debt-type').value, amount: amount, person: document.getElementById('debt-person').value, createdAt: new Date() });
-    showToast('Đã ghi vào sổ!'); e.target.reset(); document.getElementById('debt-amount').dataset.raw = "0"; loadAllData();
+    e.preventDefault(); 
+    const amount = Number(document.getElementById('debt-amount').dataset.raw || 0);
+    const deadline = document.getElementById('debt-deadline').value; // Có thể rỗng
+    const note = document.getElementById('debt-note').value; // Có thể rỗng
+
+    await addDoc(collection(db, 'users', currentUser.uid, 'debt'), { 
+        type: document.getElementById('debt-type').value, 
+        amount: amount, 
+        person: document.getElementById('debt-person').value, 
+        deadline: deadline,
+        note: note,
+        createdAt: new Date() 
+    });
+    showToast('Đã ghi vào sổ!'); 
+    e.target.reset(); 
+    document.getElementById('debt-amount').dataset.raw = "0"; 
+    loadAllData();
 });
 
-// === LOGIC WISHLIST MỚI ===
-
-// Chuyển Tab Wishlist
+// === WISHLIST LOGIC ===
 document.getElementById('tab-w-active').addEventListener('click', (e) => {
     e.target.classList.add('active'); document.getElementById('tab-w-bought').classList.remove('active');
     document.getElementById('view-w-active').style.display = 'block'; document.getElementById('view-w-bought').style.display = 'none';
@@ -157,28 +176,23 @@ document.getElementById('tab-w-bought').addEventListener('click', (e) => {
     document.getElementById('view-w-active').style.display = 'none'; document.getElementById('view-w-bought').style.display = 'block';
 });
 
-// Thêm món
 document.getElementById('wishlist-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const price = Number(document.getElementById('wish-price').dataset.raw || 0);
-    // Thêm trường isBought: false mặc định
     await addDoc(collection(db, 'users', currentUser.uid, 'wishlist'), {
         name: document.getElementById('wish-name').value, price: price, link: document.getElementById('wish-link').value, priority: Number(document.getElementById('wish-priority').value), isBought: false, createdAt: new Date()
     });
     showToast('Đã thêm Wishlist!'); e.target.reset(); document.getElementById('wish-price').dataset.raw = "0"; loadAllData();
 });
 
-// Tính tổng và hiện nút "Mua xong"
 window.calcWishlistTotal = () => {
     let total = 0;
     const checkedBoxes = document.querySelectorAll('.wish-check:checked');
     checkedBoxes.forEach(cb => { total += Number(cb.dataset.price); });
     document.getElementById('wishlist-selected-total').innerText = formatVND(total);
-    // Hiện nút "Đã chốt đơn" nếu có ít nhất 1 cái tick
     document.getElementById('btn-mark-bought').style.display = checkedBoxes.length > 0 ? 'inline-block' : 'none';
 };
 
-// Nút "Đã chốt đơn" -> Chuyển sang trạng thái đã mua
 document.getElementById('btn-mark-bought').addEventListener('click', async () => {
     const checkedBoxes = document.querySelectorAll('.wish-check:checked');
     for(let cb of checkedBoxes) {
@@ -189,7 +203,7 @@ document.getElementById('btn-mark-bought').addEventListener('click', async () =>
     loadAllData();
 });
 
-// === RENDER DỮ LIỆU ===
+// === RENDER DỮ LIỆU CHÍNH ===
 async function loadAllData() {
     if (!currentUser) return;
     const [incSnap, expSnap, debtSnap, wishSnap, budgetDoc] = await Promise.all([
@@ -221,25 +235,36 @@ async function loadAllData() {
 
     drawChart(catExp);
 
+    // XUẤT DỮ LIỆU NỢ MỚI
     let vayHtml = '', choVayHtml = '', totalVay = 0, totalChoVay = 0;
     debtSnap.forEach(d => {
         const data = d.data();
-        const html = `<li><div>${data.person}<br><small>${formatVND(data.amount)}</small></div> <div class="action-btns"><button class="btn-icon pay" title="Đã thanh toán" onclick="payDebt('${d.id}', '${data.type}', ${data.amount}, '${data.person}')"><i class="fa-solid fa-check"></i></button> <button class="btn-icon" onclick="requestDelete('debt','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`;
+        const deadlineStr = data.deadline ? `<span style="color:#f59e0b; margin-right:8px;"><i class="fa-regular fa-clock"></i> ${formatDate(data.deadline)}</span>` : '';
+        const noteStr = data.note ? `<span style="color:#64748b;"><i class="fa-solid fa-tag"></i> ${data.note}</span>` : '';
+        
+        const html = `<li>
+            <div style="flex:1;">
+                <strong>${data.person}</strong><br>
+                <small>${formatVND(data.amount)}</small><br>
+                <small style="font-size:0.8rem; display:inline-block; margin-top:4px;">${deadlineStr} ${noteStr}</small>
+            </div> 
+            <div class="action-btns" style="align-self:flex-start;">
+                <button class="btn-icon pay" title="Đã thanh toán" onclick="payDebt('${d.id}', '${data.type}', ${data.amount}, '${data.person}')"><i class="fa-solid fa-check"></i></button> 
+                <button class="btn-icon" onclick="requestDelete('debt','${d.id}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </li>`;
+
         if(data.type === 'vay') { vayHtml += html; totalVay += data.amount; } else { choVayHtml += html; totalChoVay += data.amount; }
     });
     document.getElementById('list-vay').innerHTML = vayHtml; document.getElementById('list-cho-vay').innerHTML = choVayHtml;
     document.getElementById('overview-vay').innerText = formatVND(totalVay); document.getElementById('overview-cho-vay').innerText = formatVND(totalChoVay);
 
-    // Xóa HTML cũ của Wishlist
     let wishPrio1 = '', wishPrio2 = '', wishPrio3 = '', wishBought = '';
-    
     wishSnap.forEach((d) => {
         const data = d.data();
         if (data.isBought) {
-            // Danh sách đã mua
             wishBought += `<li><div>${data.name}<br><small>${formatVND(data.price)}</small></div> <div class="action-btns"><button class="btn-icon" onclick="requestDelete('wishlist','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`;
         } else {
-            // Danh sách chưa mua (phân loại cột)
             const html = `
                 <div class="wish-card prio-${data.priority}">
                     <input type="checkbox" class="wish-check" data-price="${data.price || 0}" data-id="${d.id}" onchange="calcWishlistTotal()">
@@ -262,8 +287,7 @@ async function loadAllData() {
     document.getElementById('wish-prio-2').innerHTML = wishPrio2 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>';
     document.getElementById('wish-prio-3').innerHTML = wishPrio3 || '<p style="color:#94a3b8; grid-column: 1 / -1;">Chưa có mục nào.</p>';
     document.getElementById('wish-bought-list').innerHTML = wishBought || '<li><p style="color:#94a3b8; margin:0;">Chưa chốt được món nào.</p></li>';
-    
-    calcWishlistTotal(); // Reset lại ô tính tiền
+    calcWishlistTotal();
 }
 
 document.getElementById('save-budget').addEventListener('click', async () => {
