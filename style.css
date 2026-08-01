@@ -1,25 +1,23 @@
-/* Khai báo biến màu sắc */
 :root {
     --bg-color: #ffffff;
-    --text-color: #333333;
+    --text-color: #2c3e50;
     --primary-color: #a8e6cf; /* Xanh lá pastel */
     --primary-hover: #8cd6bb;
-    --card-bg: #f9f9f9;
-    --border-color: #eeeeee;
+    --card-bg: #f9fbf9;
+    --border-color: #e0ece4;
 }
 
-/* Biến màu cho Dark Mode */
 body.dark-mode {
-    --bg-color: #121212;
-    --text-color: #e0e0e0;
+    --bg-color: #121814;
+    --text-color: #e0e6e3;
     --primary-color: #3b886d;
     --primary-hover: #4ea88a;
-    --card-bg: #1e1e1e;
-    --border-color: #333333;
+    --card-bg: #1e2621;
+    --border-color: #2a352e;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
     margin: 0;
@@ -38,7 +36,7 @@ header {
 
 header h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
 }
 
 button {
@@ -46,7 +44,7 @@ button {
     border: none;
     border-radius: 8px;
     padding: 10px 15px;
-    font-weight: bold;
+    font-weight: 600;
 }
 
 .btn-primary {
@@ -54,6 +52,7 @@ button {
     color: #111;
     width: 100%;
     margin-top: 10px;
+    padding: 12px;
 }
 
 .btn-primary:hover {
@@ -63,20 +62,20 @@ button {
 #login-message {
     text-align: center;
     margin-top: 50px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 
 main {
-    max-width: 800px;
+    max-width: 600px;
     margin: 20px auto;
     padding: 0 15px;
 }
 
-/* Tab Navigation */
+/* Tab Nav */
 .tabs {
     display: flex;
     overflow-x: auto;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 20px;
     padding-bottom: 5px;
 }
@@ -86,6 +85,7 @@ main {
     color: var(--text-color);
     border: 1px solid var(--border-color);
     white-space: nowrap;
+    flex: 1;
 }
 
 .tab-btn.active {
@@ -93,7 +93,7 @@ main {
     color: #111;
 }
 
-/* Nội dung Tab */
+/* Form & Input */
 .tab-content {
     display: none;
     background-color: var(--card-bg);
@@ -106,11 +106,10 @@ main {
     display: block;
 }
 
-/* Form Input */
 form input, form select {
     width: 100%;
     padding: 12px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background-color: var(--bg-color);
@@ -118,11 +117,11 @@ form input, form select {
     box-sizing: border-box;
 }
 
-/* Thẻ Tổng Quan */
+/* Summary Cards */
 .summary-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
 }
 
 .card {
@@ -133,18 +132,23 @@ form input, form select {
     background-color: var(--bg-color);
 }
 
-/* Wishlist */
+.card h3 { margin: 0 0 10px 0; font-size: 0.9rem; opacity: 0.8; }
+.card p { margin: 0; font-size: 1.2rem; font-weight: bold; }
+
+/* Wishlist List */
 #wishlist-items {
     list-style: none;
     padding: 0;
+    margin-top: 20px;
 }
 
 #wishlist-items li {
     background: var(--bg-color);
     margin-top: 10px;
-    padding: 15px;
+    padding: 12px;
     border-radius: 8px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     border: 1px solid var(--border-color);
 }
