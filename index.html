@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Chi Tiêu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>💸 Sổ Thu Chi</h1>
+        <div class="header-actions">
+            <button id="theme-toggle">🌙 Dark Mode</button>
+            <button id="login-btn">Đăng nhập Google</button>
+            <button id="logout-btn" style="display: none;">Đăng xuất</button>
+        </div>
+    </header>
+
+    <div id="login-message">
+        <p>Vui lòng đăng nhập để quản lý chi tiêu của bạn!</p>
+    </div>
+
+    <main id="app-content" style="display: none;">
+        <!-- Thanh Tab -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-target="overview">Tổng quan</button>
+            <button class="tab-btn" data-target="income">Thu</button>
+            <button class="tab-btn" data-target="expense">Chi</button>
+            <button class="tab-btn" data-target="debt">Nợ</button>
+            <button class="tab-btn" data-target="wishlist">Wishlist</button>
+        </nav>
+
+        <!-- Nội dung Tab Tổng quan -->
+        <section id="overview" class="tab-content active">
+            <h2>Tháng này</h2>
+            <div class="summary-cards">
+                <div class="card thu"><h3>Tổng Thu</h3><p id="total-income">0 đ</p></div>
+                <div class="card chi"><h3>Tổng Chi</h3><p id="total-expense">0 đ</p></div>
+                <div class="card no"><h3>Tổng Nợ</h3><p id="total-debt">0 đ</p></div>
+            </div>
+        </section>
+
+        <!-- Nội dung Tab Thu -->
+        <section id="income" class="tab-content">
+            <h2>Nhập Tiền Thu</h2>
+            <form id="income-form">
+                <input type="number" id="income-amount" placeholder="Số tiền" required>
+                <input type="text" id="income-source" placeholder="Nguồn (Lương, Thưởng...)" required>
+                <button type="submit" class="btn-primary">Lưu khoản thu</button>
+            </form>
+        </section>
+
+        <!-- Nội dung Tab Chi -->
+        <section id="expense" class="tab-content">
+            <h2>Nhập Tiền Chi</h2>
+            <form id="expense-form">
+                <input type="number" id="expense-amount" placeholder="Số tiền" required>
+                <input type="text" id="expense-category" placeholder="Danh mục (Ăn uống, Mua sắm...)" required>
+                <button type="submit" class="btn-primary">Lưu khoản chi</button>
+            </form>
+        </section>
+
+        <!-- Nội dung Tab Nợ -->
+        <section id="debt" class="tab-content">
+            <h2>Ghi chép Nợ</h2>
+            <form id="debt-form">
+                <select id="debt-type">
+                    <option value="vay">Mình vay người ta</option>
+                    <option value="cho_vay">Người ta vay mình</option>
+                </select>
+                <input type="number" id="debt-amount" placeholder="Số tiền" required>
+                <input type="text" id="debt-person" placeholder="Tên người nợ/chủ nợ" required>
+                <button type="submit" class="btn-primary">Lưu nợ</button>
+            </form>
+        </section>
+
+        <!-- Nội dung Tab Wishlist -->
+        <section id="wishlist" class="tab-content">
+            <h2>Wishlist (Cần Mua)</h2>
+            <form id="wishlist-form">
+                <input type="text" id="wish-name" placeholder="Tên món đồ" required>
+                <input type="url" id="wish-link" placeholder="Link Shopee/TikTok">
+                <select id="wish-priority">
+                    <option value="1">🔥 Must have (Phải mua)</option>
+                    <option value="2">✨ Có cũng được</option>
+                    <option value="3">🤷‍♀️ Chưa cần lắm</option>
+                </select>
+                <button type="submit" class="btn-primary">Thêm vào Wishlist</button>
+            </form>
+            <ul id="wishlist-items">
+                <!-- Các món đồ sẽ hiện ở đây -->
+            </ul>
+        </section>
+    </main>
+
+    <!-- Lưu ý quan trọng: Phải dùng type="module" cho Firebase v9 -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
