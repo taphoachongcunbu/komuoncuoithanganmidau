@@ -98,7 +98,6 @@ function showToast(message, type = 'success') {
     setTimeout(() => { toast.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => toast.remove(), 300); }, 3000);
 }
 
-// Modal Xóa
 let itemToDelete = null;
 document.getElementById('cancel-delete').onclick = () => { document.getElementById('confirm-modal').style.display = 'none'; };
 document.getElementById('confirm-delete').onclick = async () => {
@@ -109,7 +108,6 @@ document.getElementById('confirm-delete').onclick = async () => {
 };
 window.requestDelete = (type, id) => { itemToDelete = { type, id }; document.getElementById('confirm-modal').style.display = 'flex'; };
 
-// Modal Nhập Tiền Tùy Chỉnh
 function openCustomPrompt(title, defaultVal) {
     return new Promise((resolve) => {
         const modal = document.getElementById('prompt-modal');
@@ -124,23 +122,23 @@ function openCustomPrompt(title, defaultVal) {
     });
 }
 
-// === FIX Ô NHẬP TIỀN HOÀN HẢO (KHÔNG LỖI NHẢY SỐ) ===
+// === FIX Ô NHẬP TIỀN HOÀN HẢO ===
 function handleAmountInput(e) {
-    let rawVal = e.target.value.replace(/\D/g, ""); // Chỉ giữ lại số
+    let rawVal = e.target.value.replace(/\D/g, ""); 
     e.target.dataset.raw = rawVal || "0";
-    e.target.value = rawVal; // Để số thuần khi đang gõ
+    e.target.value = rawVal; 
 }
 
 function handleAmountBlur(e) {
     let rawVal = e.target.dataset.raw || "0";
     if (rawVal !== "0" && rawVal !== "") {
-        e.target.value = Number(rawVal).toLocaleString('vi-VN'); // Phẩy số khi gõ xong
+        e.target.value = Number(rawVal).toLocaleString('vi-VN'); 
     }
 }
 
 function handleAmountFocus(e) {
     let rawVal = e.target.dataset.raw || "";
-    e.target.value = rawVal === "0" ? "" : rawVal; // Hiện lại số thuần khi nhấp lại
+    e.target.value = rawVal === "0" ? "" : rawVal; 
 }
 
 document.querySelectorAll('.amount-input').forEach(input => {
@@ -150,14 +148,6 @@ document.querySelectorAll('.amount-input').forEach(input => {
 });
 
 const formatVND = (amount) => Number(amount).toLocaleString('vi-VN') + ' đ';
-
-const formatDateTime = (timestamp) => {
-    if(!timestamp) return '';
-    const d = timestamp.toDate();
-    const date = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
-    const time = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-    return `<span style="color:#64748b; font-size:0.85rem; display:block; margin-top:3px;"><i class="fa-regular fa-clock"></i> ${date} lúc ${time}</span>`;
-};
 
 // Auth
 document.getElementById('theme-toggle').addEventListener('click', () => { document.body.classList.toggle('dark-mode'); if(expenseChartInstance) loadAllData(); });
@@ -219,7 +209,7 @@ document.getElementById('tab-d-debt').addEventListener('click', (e) => { e.targe
 document.getElementById('tab-d-recur').addEventListener('click', (e) => { e.target.classList.add('active'); document.getElementById('tab-d-debt').classList.remove('active'); document.getElementById('view-d-debt').style.display='none'; document.getElementById('view-d-recur').style.display='block'; });
 
 document.getElementById('borrow-form').addEventListener('submit', async (e) => { e.preventDefault(); await addDoc(collection(db, 'users', currentUser.uid, 'debt'), { type: 'vay', amount: Number(document.getElementById('borrow-amount').dataset.raw||0), person: document.getElementById('borrow-person').value, createdAt: new Date() }); showToast('Đã lưu!'); e.target.reset(); document.getElementById('borrow-amount').dataset.raw = "0"; loadAllData(); });
-document.getElementById('lend-form').addEventListener('submit', async (e) => { e.preventDefault(); await addDoc(collection(db, 'users', currentUser.uid, 'debt'), { type: 'cho_vay', amount: Number(document.getElementById('lend-amount').dataset.raw||0), person: document.getElementById('lend-person').value, createdAt: new Date() }); showToast('Đã lưu!'); e.target.reset(); document.getElementById('lend-amount').dataset.raw = "0"; loadAllData(); });
+document.getElementById('lend-form').addEventListener('submit', async (e) => { e.preventDefault(); await addDoc(collection(db, 'users', currentUser.uid, 'lend'), { type: 'cho_vay', amount: Number(document.getElementById('lend-amount').dataset.raw||0), person: document.getElementById('lend-person').value, createdAt: new Date() }); showToast('Đã lưu!'); e.target.reset(); document.getElementById('lend-amount').dataset.raw = "0"; loadAllData(); });
 
 // Trả nợ
 window.payDebt = async (debtId, type, amount, person) => {
@@ -269,16 +259,23 @@ document.getElementById('btn-mark-bought').addEventListener('click', async () =>
 async function loadAllData() {
     if (!currentUser) return;
     const [incSnap, expSnap, debtSnap, recurSnap, wishSnap, budgetDoc] = await Promise.all([
-        getDocs(query(collection(db, 'users', currentUser.uid, 'income'), orderBy('createdAt', 'desc'))), getDocs(query(collection(db, 'users', currentUser.uid, 'expense'), orderBy('createdAt', 'desc'))),
-        getDocs(collection(db, 'users', currentUser.uid, 'debt')), getDocs(collection(db, 'users', currentUser.uid, 'recurring')), getDocs(query(collection(db, 'users', currentUser.uid, 'wishlist'), orderBy('priority', 'asc'))), getDoc(doc(db, 'users', currentUser.uid, 'settings', 'budget'))
+        getDocs(query(collection(db, 'users', currentUser.uid, 'income'), orderBy('createdAt', 'desc'))), 
+        getDocs(query(collection(db, 'users', currentUser.uid, 'expense'), orderBy('createdAt', 'desc'))),
+        getDocs(collection(db, 'users', currentUser.uid, 'debt')), 
+        getDocs(collection(db, 'users', currentUser.uid, 'recurring')), 
+        getDocs(query(collection(db, 'users', currentUser.uid, 'wishlist'), orderBy('priority', 'asc'))), 
+        getDoc(doc(db, 'users', currentUser.uid, 'settings', 'budget'))
     ]);
 
-    let totalInc = 0, totalExp = 0, livingExp = 0, catExp = {}, historyHtml = '';
+    let totalInc = 0, totalExp = 0, livingExp = 0, catExp = {};
     
+    // MẢNG CHỨA TẤT CẢ GIAO DỊCH ĐỂ GOM NHÓM
+    let allTransactions = [];
+
     incSnap.forEach(d => { 
         if(isDateInRange(d.data().createdAt)) {
             totalInc += d.data().amount; 
-            historyHtml += `<li><div><strong>${d.data().source}</strong> ${formatDateTime(d.data().createdAt)}</div> <div class="action-btns"><span style="color:#10b981">+${formatVND(d.data().amount)}</span> <button class="btn-icon" onclick="requestDelete('income','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`; 
+            allTransactions.push({ id: d.id, type: 'income', name: d.data().source, amount: d.data().amount, createdAt: d.data().createdAt });
         }
     });
     
@@ -287,18 +284,69 @@ async function loadAllData() {
             let amt = d.data().amount; let cat = d.data().category; 
             totalExp += amt; catExp[cat] = (catExp[cat] || 0) + amt;
             
-            // HẠN MỨC SINH HOẠT: Không tính tiền trả nợ và hóa đơn
             if (!cat.startsWith('Trả nợ') && !cat.startsWith('Thanh toán Hóa đơn')) {
                 livingExp += amt;
             }
 
-            historyHtml += `<li><div><strong>${cat}</strong> ${formatDateTime(d.data().createdAt)}</div> <div class="action-btns"><span style="color:#ef4444">-${formatVND(amt)}</span> <button class="btn-icon" onclick="requestDelete('expense','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`; 
+            allTransactions.push({ id: d.id, type: 'expense', name: cat, amount: amt, createdAt: d.data().createdAt });
         }
     });
 
+    // === XỬ LÝ GOM NHÓM LỊCH SỬ THEO NGÀY (LẤY 3 NGÀY GẦN NHẤT) ===
+    allTransactions.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+
+    let groupedByDate = {};
+    allTransactions.forEach(item => {
+        const d = item.createdAt.toDate();
+        const dateKey = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+        if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
+        groupedByDate[dateKey].push(item);
+    });
+
+    // Lấy tối đa 3 ngày gần nhất có giao dịch
+    const recentDateKeys = Object.keys(groupedByDate).slice(0, 3);
+    
+    let historyHtml = '';
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')}`;
+    
+    const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${(yesterday.getMonth()+1).toString().padStart(2,'0')}-${yesterday.getDate().toString().padStart(2,'0')}`;
+
+    if (recentDateKeys.length === 0) {
+        historyHtml = '<p style="color:#94a3b8; text-align:center; padding: 20px;">Chưa có giao dịch nào gần đây.</p>';
+    } else {
+        recentDateKeys.forEach(dateKey => {
+            let labelDate = dateKey.split('-').reverse().slice(0, 2).join('/'); // DD/MM
+            if (dateKey === todayStr) labelDate = "Hôm nay (" + labelDate + ")";
+            else if (dateKey === yesterdayStr) labelDate = "Hôm qua (" + labelDate + ")";
+            else labelDate = "Ngày " + labelDate;
+
+            let dayItems = groupedByDate[dateKey];
+            let dayHtml = `<div style="margin-top:15px; margin-bottom:8px; font-weight:bold; color:var(--primary-color); border-bottom:1px solid var(--border-color); padding-bottom:4px; font-size:0.95rem;">📅 ${labelDate}</div>`;
+            
+            dayItems.forEach(item => {
+                const timeStr = `${item.createdAt.toDate().getHours().toString().padStart(2,'0')}:${item.createdAt.toDate().getMinutes().toString().padStart(2,'0')}`;
+                const isInc = item.type === 'income';
+                dayHtml += `
+                    <li style="margin-bottom:8px;">
+                        <div>
+                            <strong>${item.name}</strong>
+                            <small style="color:#64748b; font-size:0.8rem; display:block;"><i class="fa-regular fa-clock"></i> ${timeStr}</small>
+                        </div> 
+                        <div class="action-btns">
+                            <span style="color:${isInc ? '#10b981' : '#ef4444'}; font-weight:bold;">${isInc ? '+' : '-'}${formatVND(item.amount)}</span> 
+                            <button class="btn-icon" onclick="requestDelete('${item.type}','${item.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </li>`;
+            });
+            historyHtml += dayHtml;
+        });
+    }
+
     document.getElementById('total-income').innerText = formatVND(totalInc);
     document.getElementById('total-expense').innerText = formatVND(totalExp);
-    document.getElementById('history-list').innerHTML = historyHtml || '<p style="color:#94a3b8; text-align:center; padding: 20px;">Không có giao dịch nào.</p>';
+    document.getElementById('history-list').innerHTML = historyHtml;
 
     // CẢNH BÁO HẠN MỨC SINH HOẠT
     let budget = budgetDoc.exists() ? budgetDoc.data().limit : 0;
