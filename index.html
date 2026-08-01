@@ -4,15 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sổ Thu Chi Đám Mây ☁️</title>
-    <!-- Font, Icons & Chart.js -->
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Quicksand bay bổng nhưng dễ đọc -->
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Khu vực thông báo (Toast) -->
     <div id="toast-container"></div>
+
+    <!-- Hộp thoại xác nhận Xóa tùy chỉnh -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content">
+            <h3>Xác nhận xóa?</h3>
+            <p>Dữ liệu này sẽ không thể khôi phục.</p>
+            <div class="modal-actions">
+                <button id="cancel-delete" class="btn-secondary">Hủy</button>
+                <button id="confirm-delete" class="btn-danger">Xóa luôn</button>
+            </div>
+        </div>
+    </div>
 
     <header>
         <div class="logo"><i class="fa-solid fa-wallet"></i> Sổ Thu Chi</div>
@@ -30,10 +41,9 @@
     </div>
 
     <main id="app-content" style="display: none;">
-        <!-- Smart Assistant (Chatbot nhập nhanh) -->
         <div class="smart-input-container">
             <i class="fa-solid fa-robot"></i>
-            <input type="text" id="smart-input" placeholder="Gõ nhanh: 'chi 50k ăn sáng' hoặc 'thu 2tr lương'...">
+            <input type="text" id="smart-input" placeholder="Gõ nhanh: 'chi 50k ăn sáng'...">
             <button id="btn-smart-submit"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
 
@@ -47,61 +57,64 @@
         <!-- TỔNG QUAN -->
         <section id="overview" class="tab-content active">
             <div class="budget-section">
-                Hạn mức tháng này: <input type="number" id="budget-limit" placeholder="VD: 5000000"> đ
+                Hạn mức: <input type="text" id="budget-limit" class="amount-input" placeholder="VD: 5.000.000"> đ
                 <button id="save-budget" class="btn-small">Lưu</button>
             </div>
             <div id="budget-warning" class="warning-alert" style="display:none;"></div>
             
-            <div class="chart-container">
-                <canvas id="expenseChart"></canvas>
-            </div>
+            <div class="chart-container"><canvas id="expenseChart"></canvas></div>
 
             <div class="summary-cards">
                 <div class="card thu">
                     <i class="fa-solid fa-arrow-trend-up"></i>
-                    <h3>Tổng Thu</h3>
-                    <p id="total-income">0 đ</p>
+                    <h3>Tổng Thu</h3><p id="total-income">0 đ</p>
                 </div>
                 <div class="card chi">
                     <i class="fa-solid fa-arrow-trend-down"></i>
-                    <h3>Tổng Chi</h3>
-                    <p id="total-expense">0 đ</p>
+                    <h3>Tổng Chi</h3><p id="total-expense">0 đ</p>
                 </div>
+            </div>
+            
+            <div class="debt-overview">
+                <div><i class="fa-solid fa-hand-holding-dollar"></i> Đang mượn: <b id="overview-vay" style="color:#e74c3c">0 đ</b></div>
+                <div><i class="fa-solid fa-sack-dollar"></i> Cho mượn: <b id="overview-cho-vay" style="color:#27ae60">0 đ</b></div>
             </div>
         </section>
 
-        <!-- THU / CHI THỦ CÔNG (Gộp chung giao diện cho gọn) -->
+        <!-- THU / CHI -->
         <section id="income" class="tab-content">
             <div class="form-group-split">
                 <div class="form-box">
                     <h3><i class="fa-solid fa-plus-circle"></i> Nhập Thu</h3>
                     <form id="income-form">
-                        <input type="number" id="income-amount" placeholder="Số tiền" required>
+                        <input type="text" id="income-amount" class="amount-input" placeholder="Số tiền" required>
                         <select id="income-source">
-                            <option value="Lương">Lương</option>
-                            <option value="Thưởng">Thưởng</option>
-                            <option value="Khác">Khác</option>
+                            <option value="Lương">Lương 💰</option>
+                            <option value="Thưởng">Thưởng 🎁</option>
+                            <option value="Kinh doanh">Kinh doanh 📈</option>
+                            <option value="Khác">Khác ✏️</option>
                         </select>
+                        <input type="text" id="income-other" placeholder="Nhập tên nguồn thu..." style="display:none;">
                         <button type="submit" class="btn-primary">Lưu Thu</button>
                     </form>
                 </div>
                 <div class="form-box">
                     <h3><i class="fa-solid fa-minus-circle"></i> Nhập Chi</h3>
                     <form id="expense-form">
-                        <input type="number" id="expense-amount" placeholder="Số tiền" required>
+                        <input type="text" id="expense-amount" class="amount-input" placeholder="Số tiền" required>
                         <select id="expense-category">
                             <option value="Ăn uống">Ăn uống 🍔</option>
                             <option value="Di chuyển">Di chuyển 🛵</option>
                             <option value="Mua sắm">Mua sắm 🛍️</option>
-                            <option value="Giải trí">Giải trí 🎬</option>
-                            <option value="Khác">Khác</option>
+                            <option value="Tiền nhà/Điện nước">Tiền nhà/Điện nước 🏠</option>
+                            <option value="Khác">Khác ✏️</option>
                         </select>
+                        <input type="text" id="expense-other" placeholder="Nhập tên khoản chi..." style="display:none;">
                         <button type="submit" class="btn-danger">Lưu Chi</button>
                     </form>
                 </div>
             </div>
-            <!-- Chỗ này dùng để hiển thị danh sách lịch sử có thể Xóa -->
-            <h3>Lịch sử gần đây</h3>
+            <h3>Lịch sử</h3>
             <ul id="history-list" class="list-ui"></ul>
         </section>
 
@@ -109,20 +122,20 @@
         <section id="debt" class="tab-content">
             <form id="debt-form" class="inline-form">
                 <select id="debt-type">
-                    <option value="vay">Mình vay (Phải trả)</option>
-                    <option value="cho_vay">Cho vay (Được đòi)</option>
+                    <option value="vay">Đang mượn người ta</option>
+                    <option value="cho_vay">Cho người ta mượn</option>
                 </select>
-                <input type="number" id="debt-amount" placeholder="Số tiền" required>
-                <input type="text" id="debt-person" placeholder="Tên người nợ" required>
-                <button type="submit" class="btn-primary">Ghi nợ</button>
+                <input type="text" id="debt-amount" class="amount-input" placeholder="Số tiền" required>
+                <input type="text" id="debt-person" placeholder="Tên người mượn / cho mượn" required>
+                <button type="submit" class="btn-primary">Ghi vào sổ</button>
             </form>
             <div class="debt-split">
                 <div class="debt-col">
-                    <h4 style="color: #e74c3c;">Cần trả</h4>
+                    <h4 style="color: #e74c3c;">Các khoản đang mượn</h4>
                     <ul id="list-vay" class="list-ui"></ul>
                 </div>
                 <div class="debt-col">
-                    <h4 style="color: #27ae60;">Cần đòi</h4>
+                    <h4 style="color: #27ae60;">Các khoản cho mượn</h4>
                     <ul id="list-cho-vay" class="list-ui"></ul>
                 </div>
             </div>
@@ -130,17 +143,25 @@
 
         <!-- WISHLIST -->
         <section id="wishlist" class="tab-content">
+            <div class="wishlist-header">
+                <h3>Wishlist</h3>
+                <div class="wishlist-total">Tổng món đang chọn: <b id="wishlist-selected-total" style="color:var(--primary-color)">0 đ</b></div>
+            </div>
             <form id="wishlist-form" class="inline-form">
                 <input type="text" id="wish-name" placeholder="Tên món đồ" required>
-                <input type="number" id="wish-price" placeholder="Giá tiền (để nhẩm tính)">
-                <input type="url" id="wish-image" placeholder="Link ảnh (Optional)">
-                <input type="url" id="wish-link" placeholder="Link Shopee (Optional)">
+                <input type="text" id="wish-price" class="amount-input" placeholder="Giá tiền (để nhẩm tính)">
+                <div class="file-upload">
+                    <label for="wish-image-file"><i class="fa-solid fa-cloud-arrow-up"></i> Tải ảnh lên</label>
+                    <input type="file" id="wish-image-file" accept="image/*" style="display: none;">
+                    <span id="file-name">Chưa chọn ảnh</span>
+                </div>
+                <input type="url" id="wish-link" placeholder="Link mua hàng (Optional)">
                 <select id="wish-priority">
                     <option value="1">🔥 Must have</option>
                     <option value="2">✨ Có cũng được</option>
                     <option value="3">🤷‍♀️ Chưa cần lắm</option>
                 </select>
-                <button type="submit" class="btn-primary">Thêm</button>
+                <button type="submit" class="btn-primary" id="btn-add-wish">Thêm món</button>
             </form>
             <div id="wishlist-grid" class="grid-ui"></div>
         </section>
