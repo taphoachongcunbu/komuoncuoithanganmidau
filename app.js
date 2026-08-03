@@ -27,7 +27,7 @@ if (savedTheme === 'dark') {
 document.getElementById('theme-toggle').addEventListener('click', () => { 
     document.body.classList.toggle('dark-mode'); 
     const isDark = document.body.classList.contains('dark-mode');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light'); // Lưu vào bộ nhớ trình duyệt
+    localStorage.setItem('theme', isDark ? 'dark' : 'light'); 
     if(expenseChartInstance) loadAllData(); 
 });
 
@@ -215,7 +215,7 @@ async function saveTransaction(type, amountId, selectId, otherId) {
 document.getElementById('income-form').addEventListener('submit', (e) => { e.preventDefault(); saveTransaction('income', 'income-amount', 'income-source', 'income-other'); e.target.reset(); document.getElementById('income-amount').dataset.raw = "0"; });
 document.getElementById('expense-form').addEventListener('submit', (e) => { e.preventDefault(); saveTransaction('expense', 'expense-amount', 'expense-category', 'expense-other'); e.target.reset(); document.getElementById('expense-amount').dataset.raw = "0";});
 
-// Nợ Bạn Bè (Đã sửa lại chung collection 'debt')
+// Nợ Bạn Bè
 document.getElementById('tab-d-debt').addEventListener('click', (e) => { e.target.classList.add('active'); document.getElementById('tab-d-recur').classList.remove('active'); document.getElementById('view-d-debt').style.display='block'; document.getElementById('view-d-recur').style.display='none'; });
 document.getElementById('tab-d-recur').addEventListener('click', (e) => { e.target.classList.add('active'); document.getElementById('tab-d-debt').classList.remove('active'); document.getElementById('view-d-debt').style.display='none'; document.getElementById('view-d-recur').style.display='block'; });
 
@@ -310,6 +310,19 @@ async function loadAllData() {
         }
     });
 
+    // Cập nhật Số Dư
+    document.getElementById('total-income').innerText = formatVND(totalInc);
+    document.getElementById('total-expense').innerText = formatVND(totalExp);
+    
+    let balance = totalInc - totalExp;
+    const balanceEl = document.getElementById('total-balance');
+    balanceEl.innerText = formatVND(balance);
+    if (balance < 0) {
+        balanceEl.style.color = '#ef4444';
+    } else {
+        balanceEl.style.color = ''; 
+    }
+
     // LỊCH SỬ GOM NHÓM TỐI ĐA 3 NGÀY
     allTransactions.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
 
@@ -360,8 +373,6 @@ async function loadAllData() {
         });
     }
 
-    document.getElementById('total-income').innerText = formatVND(totalInc);
-    document.getElementById('total-expense').innerText = formatVND(totalExp);
     document.getElementById('history-list').innerHTML = historyHtml;
 
     // CẢNH BÁO HẠN MỨC SINH HOẠT
@@ -401,12 +412,26 @@ async function loadAllData() {
     document.getElementById('recur-due-list').innerHTML = dueHtml || '<p style="color:#10b981;">Tuyệt vời! Tháng này đã thanh toán hết các loại hóa đơn. 🎉</p>'; 
     document.getElementById('recur-paid-list').innerHTML = paidHtml || '';
 
-    // RENDER WISHLIST
+    // RENDER WISHLIST & FIX OVERLAP
     let wishPrio1 = '', wishPrio2 = '', wishPrio3 = '', wishBought = '';
     wishSnap.forEach((d) => {
         const data = d.data();
-        if (data.isBought) { wishBought += `<li><div>${data.name}<br><small>${formatVND(data.price)}</small></div> <div class="action-btns"><button class="btn-icon" onclick="requestDelete('wishlist','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`; } 
-        else { const html = `<div class="wish-card prio-${data.priority}"><input type="checkbox" class="wish-check" data-price="${data.price || 0}" data-id="${d.id}" onchange="calcWishlistTotal()"><div><h4 style="margin:0 0 5px 0; padding-right:20px;">${data.name}</h4>${data.price ? `<p style="font-weight:bold; margin:0; color:var(--text-color)">${formatVND(data.price)}</p>` : ''}</div><div style="display:flex; justify-content:space-between; margin-top:15px; align-items:center;">${data.link ? `<a href="${data.link}" target="_blank" style="font-size:0.85rem; color:#8b5cf6; text-decoration:none; font-weight:bold">🛒 Mua ngay</a>` : `<span></span>`}<button class="icon-btn" onclick="requestDelete('wishlist','${d.id}')" style="color:#ef4444; padding:0"><i class="fa-solid fa-trash"></i></button></div></div>`;
+        if (data.isBought) { 
+            wishBought += `<li><div>${data.name}<br><small>${formatVND(data.price)}</small></div> <div class="action-btns"><button class="btn-icon" onclick="requestDelete('wishlist','${d.id}')"><i class="fa-solid fa-trash"></i></button></div></li>`; 
+        } 
+        else { 
+            const html = `
+                <div class="wish-card prio-${data.priority}">
+                    <input type="checkbox" class="wish-check" data-price="${data.price || 0}" data-id="${d.id}" onchange="calcWishlistTotal()">
+                    <div>
+                        <h4 style="margin:0 0 5px 0; padding-right:40px; line-height:1.4;">${data.name}</h4>
+                        ${data.price ? `<p style="font-weight:bold; margin:0; color:var(--text-color)">${formatVND(data.price)}</p>` : ''}
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:15px; align-items:center;">
+                        ${data.link ? `<a href="${data.link}" target="_blank" style="font-size:0.85rem; color:#8b5cf6; text-decoration:none; font-weight:bold">🛒 Mua ngay</a>` : `<span></span>`}
+                        <button class="icon-btn" onclick="requestDelete('wishlist','${d.id}')" style="color:#ef4444; padding:0"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
             if(data.priority == 1) wishPrio1 += html; else if(data.priority == 2) wishPrio2 += html; else wishPrio3 += html;
         }
     });
@@ -424,4 +449,3 @@ function drawChart(catExp) {
     if(data.length === 0) { labels.push("Chưa có"); data.push(1); }
     expenseChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: labels, datasets: [{ data: data, backgroundColor: ['#f87171', '#60a5fa', '#34d399', '#facc15', '#c084fc', '#fb923c'], borderWidth: isDark ? 4 : 2, borderColor: isDark ? '#1e293b' : '#fff' }] }, options: { plugins: { legend: { position: 'bottom', labels: { color: isDark ? '#f1f5f9' : '#334155', font: { family: 'Quicksand', weight: 600 } } } }, cutout: '65%' } });
 }
- 
